@@ -23,7 +23,7 @@ import { motion } from "framer-motion";
 
 export default function CreateOfferPage() {
   const [, setLocation] = useLocation();
-  const { balance, deposit } = useWallet();
+  const { balance, initializeDeposit } = useWallet();
   const { createOffer } = useOffers();
 
   const [formData, setFormData] = useState({
@@ -97,7 +97,7 @@ export default function CreateOfferPage() {
       });
 
       // Deduct from wallet (budget added to wallet, PTF stored as platform earnings)
-      deposit(formData.budget, ptf);
+      await initializeDeposit(formData.budget + ptf);
 
       setShowConfirm(false);
       setFormData({
