@@ -12,9 +12,10 @@ import {
   DropdownMenuTrigger 
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Menu, X, Bell, LogOut, User, MessageCircle, Search, Plus, Home, Sparkles, ChevronDown } from "lucide-react";
+import { Menu, X, Bell, LogOut, User, MessageCircle, Search, Plus, Home, Sparkles, ChevronDown, Globe, MapPin } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
+import { useSectorStore } from "@/stores/sector-store";
 
 interface NavbarProps {
   variant?: 'default' | 'transparent';
