@@ -12,9 +12,32 @@ import {
   DropdownMenuTrigger 
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Menu, X, Bell, LogOut, User, MessageCircle, Search, Plus, Home, Sparkles, ChevronDown } from "lucide-react";
+import { Menu, X, Bell, LogOut, User, MessageCircle, Search, Plus, Home, Sparkles, ChevronDown, Globe, MapPin } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
+import { useSectorStore } from "@/stores/sector-store";
+
+function SectorToggle({ shouldBeTransparent }: { shouldBeTransparent: boolean }) {
+  const { sector, toggleSector } = useSectorStore();
+  return (
+    <div className="hidden md:flex items-center">
+      <button
+        onClick={toggleSector}
+        className={cn(
+          "flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all border",
+          shouldBeTransparent
+            ? "border-white/20 text-white/80 hover:bg-white/10"
+            : sector === "real_world"
+              ? "border-primary/20 bg-primary/5 text-primary"
+              : "border-purple-500/20 bg-purple-500/5 text-purple-600 dark:text-purple-400"
+        )}
+      >
+        {sector === "real_world" ? <MapPin className="w-3.5 h-3.5" /> : <Globe className="w-3.5 h-3.5" />}
+        {sector === "real_world" ? "Local" : "Global"}
+      </button>
+    </div>
+  );
+}
 
 interface NavbarProps {
   variant?: 'default' | 'transparent';
@@ -118,6 +141,9 @@ export function Navbar({ variant = 'default' }: NavbarProps) {
                 </span>
               </motion.div>
             </Link>
+
+            {/* Sector Toggle */}
+            <SectorToggle shouldBeTransparent={shouldBeTransparent} />
 
             <div className="hidden md:flex items-center gap-1">
               {navLinks.map((link) => (

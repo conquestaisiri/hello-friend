@@ -1,6 +1,4 @@
 import { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useFirebaseAuth } from "@/hooks/use-firebase-auth";
 import { Navbar } from "@/components/layout/navbar";
 import { Footer } from "@/components/layout/footer";
 import { Button } from "@/components/ui/button";
@@ -8,32 +6,18 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { 
-  MapPin, Clock, Search, Filter, Calendar, Loader2, 
-  Sparkles, ArrowRight, User, ChevronRight, Zap, Grid3X3, List
+  MapPin, Clock, Search, Filter, Loader2, 
+  Sparkles, ArrowRight, User, ChevronRight, Zap, Grid3X3, List,
+  Globe, Shield, Star, Users
 } from "lucide-react";
 import { Link, useLocation } from "wouter";
-import { format } from "date-fns";
-import { useToast } from "@/hooks/use-toast";
 import { motion, AnimatePresence } from "framer-motion";
-
-interface HelpRequest {
-  id: string;
-  requesterId: string;
-  title: string;
-  description: string;
-  category: string;
-  location: string | null;
-  isVirtual: boolean;
-  scheduledTime: string | null;
-  isFlexible: boolean;
-  estimatedDuration: number | null;
-  rewardAmount: number | null;
-  rewardDescription: string | null;
-  status: string;
-  createdAt: string;
-}
+import { useTasksStore, type HelpTask } from "@/stores/tasks-store";
+import { useSectorStore } from "@/stores/sector-store";
+import { useLocalizationStore } from "@/stores/localization-store";
+import { useFirebaseAuth } from "@/hooks/use-firebase-auth";
 
 const categoryLabels: Record<string, string> = {
   physical_help: "Physical Help",
@@ -48,88 +32,51 @@ const categoryLabels: Record<string, string> = {
   other: "Other",
 };
 
-const categoryIcons: Record<string, string> = {
-  physical_help: "from-blue-500 to-cyan-500",
-  errands: "from-green-500 to-emerald-500",
-  tech_help: "from-purple-500 to-violet-500",
-  guidance: "from-amber-500 to-yellow-500",
-  transportation: "from-orange-500 to-red-500",
-  home_repairs: "from-rose-500 to-pink-500",
-  childcare: "from-pink-500 to-fuchsia-500",
-  pet_care: "from-teal-500 to-cyan-500",
-  tutoring: "from-indigo-500 to-blue-500",
-  other: "from-slate-500 to-gray-500",
+const categoryColors: Record<string, string> = {
+  physical_help: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
+  errands: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400",
+  tech_help: "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400",
+  guidance: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400",
+  transportation: "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400",
+  home_repairs: "bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400",
+  childcare: "bg-pink-100 text-pink-700 dark:bg-pink-900/30 dark:text-pink-400",
+  pet_care: "bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-400",
+  tutoring: "bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400",
+  other: "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-400",
+};
+
+const urgencyColors: Record<string, string> = {
+  critical: "bg-red-500 text-white",
+  urgent: "bg-orange-500 text-white",
+  high: "bg-amber-500 text-white",
+  medium: "bg-blue-500 text-white",
+  low: "bg-slate-400 text-white",
 };
 
 export default function DiscoverPage() {
-  const { user, getIdToken } = useFirebaseAuth();
+  const { user } = useFirebaseAuth();
   const [, navigate] = useLocation();
   const [searchQuery, setSearchQuery] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<string>("");
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
-  const { toast } = useToast();
-  const queryClient = useQueryClient();
+  const { sector } = useSectorStore();
+  const { formatLocal } = useLocalizationStore();
+  const tasks = useTasksStore((s) => s.tasks);
 
-  const { data: requests = [], isLoading } = useQuery<HelpRequest[]>({
-    queryKey: ["requests", categoryFilter],
-    queryFn: async () => {
-      const params = new URLSearchParams();
-      if (categoryFilter && categoryFilter !== "all") {
-        params.set("category", categoryFilter);
-      }
-      params.set("status", "published");
-      const res = await fetch(`/api/requests?${params.toString()}`);
-      if (!res.ok) throw new Error("Failed to fetch requests");
-      return res.json();
-    },
-  });
-
-  const offerHelpMutation = useMutation({
-    mutationFn: async (requestId: string) => {
-      const token = await getIdToken();
-      if (!token) throw new Error("Please sign in to make an offer");
-      const res = await fetch("/api/offers", {
-        method: "POST",
-        headers: { 
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`
-        },
-        body: JSON.stringify({ requestId, message: "I would like to help!" }),
-      });
-      if (!res.ok) {
-        const error = await res.json();
-        throw new Error(error.error || "Failed to submit offer");
-      }
-      return res.json();
-    },
-    onSuccess: () => {
-      toast({
-        title: "Offer Submitted!",
-        description: "The requester will be notified of your offer to help.",
-      });
-      queryClient.invalidateQueries({ queryKey: ["requests"] });
-    },
-    onError: (error: Error) => {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
-    },
-  });
-
-  const filteredRequests = requests.filter((req) =>
-    req.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    req.description.toLowerCase().includes(searchQuery.toLowerCase())
-  );
-
-  const handleOfferHelp = (requestId: string) => {
-    if (!user) {
-      navigate("/auth?mode=login");
-      return;
+  const publishedTasks = tasks.filter((t) => {
+    if (t.status !== "published") return false;
+    // Sector filter
+    if (sector === "real_world" && t.sector !== "real_world") return false;
+    if (sector === "web3_digital" && t.sector !== "web3_digital") return false;
+    // Category filter
+    if (categoryFilter && categoryFilter !== "all" && t.category !== categoryFilter) return false;
+    // Search
+    if (searchQuery) {
+      const q = searchQuery.toLowerCase();
+      return t.title.toLowerCase().includes(q) || t.description.toLowerCase().includes(q);
     }
-    offerHelpMutation.mutate(requestId);
-  };
+    return true;
+  });
 
   const getTimeAgo = (dateString: string) => {
     const now = new Date();
@@ -138,7 +85,6 @@ export default function DiscoverPage() {
     const diffMins = Math.floor(diffMs / 60000);
     const diffHours = Math.floor(diffMs / 3600000);
     const diffDays = Math.floor(diffMs / 86400000);
-    
     if (diffMins < 60) return `${diffMins}m ago`;
     if (diffHours < 24) return `${diffHours}h ago`;
     return `${diffDays}d ago`;
@@ -148,20 +94,24 @@ export default function DiscoverPage() {
     <div className="min-h-screen flex flex-col bg-background">
       <Navbar />
       
-      <div className="bg-gradient-to-br from-primary/5 via-accent/5 to-transparent border-b">
+      <div className={`border-b ${sector === "web3_digital" ? "bg-gradient-to-br from-slate-900 via-purple-950/30 to-slate-900" : "bg-gradient-to-br from-primary/5 via-accent/5 to-transparent"}`}>
         <div className="container mx-auto px-4 py-12">
           <motion.div 
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             className="max-w-3xl"
           >
-            <Badge className="mb-4 px-4 py-1.5 bg-primary/10 text-primary border-primary/20 rounded-full">
-              <Sparkles className="w-4 h-4 mr-2" />
-              Live Tasks
+            <Badge className={`mb-4 px-4 py-1.5 rounded-full ${sector === "web3_digital" ? "bg-purple-500/20 text-purple-300 border-purple-500/30" : "bg-primary/10 text-primary border-primary/20"}`}>
+              {sector === "web3_digital" ? <Globe className="w-4 h-4 mr-2" /> : <Sparkles className="w-4 h-4 mr-2" />}
+              {sector === "web3_digital" ? "Global Digital Tasks" : "Local Community Tasks"}
             </Badge>
-            <h1 className="text-4xl font-bold mb-3">Find tasks to help with</h1>
-            <p className="text-lg text-muted-foreground">
-              Browse open tasks from people in your community who need help
+            <h1 className={`text-4xl font-bold mb-3 ${sector === "web3_digital" ? "text-white" : ""}`}>
+              {sector === "web3_digital" ? "Find digital tasks worldwide" : "Find tasks to help with"}
+            </h1>
+            <p className={`text-lg ${sector === "web3_digital" ? "text-slate-400" : "text-muted-foreground"}`}>
+              {sector === "web3_digital" 
+                ? "Browse global tech opportunities • Payments in USDC" 
+                : "Browse open tasks from people in your community who need help"}
             </p>
           </motion.div>
         </div>
@@ -180,7 +130,7 @@ export default function DiscoverPage() {
               placeholder="Search for tasks..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-12 h-12 rounded-xl border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-sm focus:ring-4 focus:ring-primary/10"
+              className="pl-12 h-12 rounded-xl border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-sm"
             />
           </div>
           
@@ -199,35 +149,24 @@ export default function DiscoverPage() {
             </Select>
             
             <div className="flex rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden">
-              <Button 
-                variant={viewMode === "grid" ? "secondary" : "ghost"} 
-                size="icon" 
-                className="rounded-none h-12 w-12"
-                onClick={() => setViewMode("grid")}
-              >
+              <Button variant={viewMode === "grid" ? "secondary" : "ghost"} size="icon" className="rounded-none h-12 w-12" onClick={() => setViewMode("grid")}>
                 <Grid3X3 className="h-4 w-4" />
               </Button>
-              <Button 
-                variant={viewMode === "list" ? "secondary" : "ghost"} 
-                size="icon" 
-                className="rounded-none h-12 w-12"
-                onClick={() => setViewMode("list")}
-              >
+              <Button variant={viewMode === "list" ? "secondary" : "ghost"} size="icon" className="rounded-none h-12 w-12" onClick={() => setViewMode("list")}>
                 <List className="h-4 w-4" />
               </Button>
             </div>
           </div>
         </motion.div>
 
+        {/* Category pills */}
         <div className="flex flex-wrap gap-2 mb-8">
           {Object.entries(categoryLabels).slice(0, 6).map(([value, label]) => (
             <Badge
               key={value}
               variant={categoryFilter === value ? "default" : "secondary"}
               className={`cursor-pointer rounded-full px-4 py-2 transition-all ${
-                categoryFilter === value 
-                  ? "bg-primary text-white" 
-                  : "hover:bg-primary/10 hover:text-primary"
+                categoryFilter === value ? "bg-primary text-white" : "hover:bg-primary/10 hover:text-primary"
               }`}
               onClick={() => setCategoryFilter(categoryFilter === value ? "" : value)}
             >
@@ -237,22 +176,8 @@ export default function DiscoverPage() {
         </div>
 
         <AnimatePresence mode="wait">
-          {isLoading ? (
-            <motion.div 
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="flex flex-col items-center justify-center py-20"
-            >
-              <Loader2 className="h-10 w-10 animate-spin text-primary mb-4" />
-              <p className="text-muted-foreground">Loading tasks...</p>
-            </motion.div>
-          ) : filteredRequests.length === 0 ? (
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-            >
+          {publishedTasks.length === 0 ? (
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
               <Card className="p-16 text-center border-dashed border-2">
                 <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-primary/10 flex items-center justify-center">
                   <Search className="h-10 w-10 text-primary" />
@@ -260,136 +185,27 @@ export default function DiscoverPage() {
                 <h3 className="text-2xl font-bold mb-3">No tasks found</h3>
                 <p className="text-muted-foreground mb-8 max-w-md mx-auto">
                   {searchQuery || categoryFilter
-                    ? "Try adjusting your search or filters to find more tasks"
-                    : "Be the first to post a task and get help from your community!"}
+                    ? "Try adjusting your search or filters"
+                    : "Be the first to post a task!"}
                 </p>
-                {user && (
-                  <Link href="/create-request">
-                    <Button size="lg" className="rounded-full px-8 bg-gradient-to-r from-primary to-accent hover:opacity-90">
-                      Post a Task
-                      <ArrowRight className="ml-2 h-4 w-4" />
-                    </Button>
-                  </Link>
-                )}
+                <Link href="/create-request">
+                  <Button size="lg" className="rounded-full px-8">
+                    Post a Task <ArrowRight className="ml-2 h-4 w-4" />
+                  </Button>
+                </Link>
               </Card>
             </motion.div>
           ) : (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-            >
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
               <div className="flex items-center justify-between mb-6">
                 <p className="text-muted-foreground">
-                  <span className="font-semibold text-foreground">{filteredRequests.length}</span> tasks available
+                  <span className="font-semibold text-foreground">{publishedTasks.length}</span> tasks available
                 </p>
               </div>
               
-              <div className={viewMode === "grid" 
-                ? "grid md:grid-cols-2 lg:grid-cols-3 gap-6" 
-                : "space-y-4"
-              }>
-                {filteredRequests.map((request, index) => (
-                  <motion.div
-                    key={request.id}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: index * 0.05 }}
-                  >
-                    <Link href={`/request/${request.id}`}>
-                      <Card className={`group cursor-pointer border-slate-200 dark:border-slate-800 hover:border-primary/50 hover:shadow-xl hover:shadow-primary/5 transition-all duration-300 ${
-                        viewMode === "grid" ? "h-full" : ""
-                      }`}>
-                        <CardContent className={`p-6 ${viewMode === "list" ? "flex items-center gap-6" : ""}`}>
-                          <div className={viewMode === "list" ? "flex-1" : ""}>
-                            <div className="flex items-start justify-between gap-3 mb-4">
-                              <Badge 
-                                className={`bg-gradient-to-r ${categoryIcons[request.category] || categoryIcons.other} text-white rounded-full px-3 py-1`}
-                              >
-                                {categoryLabels[request.category] || request.category}
-                              </Badge>
-                              <span className="text-xs text-muted-foreground flex items-center gap-1">
-                                <Clock className="w-3 h-3" />
-                                {getTimeAgo(request.createdAt)}
-                              </span>
-                            </div>
-                            
-                            <h3 className="font-semibold text-lg mb-2 group-hover:text-primary transition-colors line-clamp-2">
-                              {request.title}
-                            </h3>
-                            
-                            <p className="text-muted-foreground text-sm line-clamp-2 mb-4">
-                              {request.description}
-                            </p>
-                            
-                            <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground mb-4">
-                              {request.location && (
-                                <span className="flex items-center gap-1">
-                                  <MapPin className="w-4 h-4" />
-                                  {request.location}
-                                </span>
-                              )}
-                              {request.scheduledTime && (
-                                <span className="flex items-center gap-1">
-                                  <Calendar className="w-4 h-4" />
-                                  {format(new Date(request.scheduledTime), "MMM d")}
-                                </span>
-                              )}
-                              {request.estimatedDuration && (
-                                <span className="flex items-center gap-1">
-                                  <Clock className="w-4 h-4" />
-                                  {request.estimatedDuration}min
-                                </span>
-                              )}
-                            </div>
-                            
-                            <div className="flex items-center justify-between pt-4 border-t border-slate-100 dark:border-slate-800">
-                              {request.rewardAmount ? (
-                                <div className="font-bold text-lg text-primary">
-                                  ${request.rewardAmount}
-                                </div>
-                              ) : (
-                                <Badge variant="secondary" className="rounded-full">
-                                  <Zap className="w-3 h-3 mr-1" />
-                                  Flexible
-                                </Badge>
-                              )}
-                              
-                              <div className="flex items-center gap-2">
-                                <Avatar className="w-6 h-6">
-                                  <AvatarFallback className="text-xs bg-primary/10 text-primary">
-                                    <User className="w-3 h-3" />
-                                  </AvatarFallback>
-                                </Avatar>
-                                <span className="text-sm text-primary font-medium flex items-center gap-1 group-hover:gap-2 transition-all">
-                                  View Details
-                                  <ChevronRight className="w-4 h-4" />
-                                </span>
-                              </div>
-                            </div>
-                          </div>
-                          
-                          {viewMode === "list" && user && user.uid !== request.requesterId && (
-                            <Button 
-                              onClick={(e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                handleOfferHelp(request.id);
-                              }}
-                              disabled={offerHelpMutation.isPending}
-                              className="shrink-0 rounded-full px-6"
-                            >
-                              {offerHelpMutation.isPending ? (
-                                <Loader2 className="h-4 w-4 animate-spin" />
-                              ) : (
-                                "Make Offer"
-                              )}
-                            </Button>
-                          )}
-                        </CardContent>
-                      </Card>
-                    </Link>
-                  </motion.div>
+              <div className={viewMode === "grid" ? "grid md:grid-cols-2 lg:grid-cols-3 gap-6" : "space-y-4"}>
+                {publishedTasks.map((task, index) => (
+                  <TaskCard key={task.id} task={task} index={index} viewMode={viewMode} formatLocal={formatLocal} getTimeAgo={getTimeAgo} />
                 ))}
               </div>
             </motion.div>
@@ -399,5 +215,113 @@ export default function DiscoverPage() {
       
       <Footer />
     </div>
+  );
+}
+
+function TaskCard({ task, index, viewMode, formatLocal, getTimeAgo }: { 
+  task: HelpTask; index: number; viewMode: string; 
+  formatLocal: (n: number) => string; getTimeAgo: (s: string) => string 
+}) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: index * 0.04 }}
+    >
+      <Link href={`/request/${task.id}`}>
+        <Card className={`group cursor-pointer border-slate-200 dark:border-slate-800 hover:border-primary/50 hover:shadow-xl hover:shadow-primary/5 transition-all duration-300 ${viewMode === "grid" ? "h-full" : ""}`}>
+          <CardContent className={`p-6 ${viewMode === "list" ? "flex items-center gap-6" : ""}`}>
+            <div className={viewMode === "list" ? "flex-1" : ""}>
+              <div className="flex items-start justify-between gap-2 mb-3">
+                <div className="flex flex-wrap gap-2">
+                  <Badge className={categoryColors[task.category] || categoryColors.other}>
+                    {categoryLabels[task.category] || task.category}
+                  </Badge>
+                  <Badge className={urgencyColors[task.urgency]}>
+                    {task.urgency}
+                  </Badge>
+                  {task.verificationTierRequired >= 2 && (
+                    <Badge variant="outline" className="text-xs">
+                      <Shield className="w-3 h-3 mr-1" />
+                      Tier {task.verificationTierRequired}
+                    </Badge>
+                  )}
+                </div>
+                <span className="text-xs text-muted-foreground flex items-center gap-1 shrink-0">
+                  <Clock className="w-3 h-3" />
+                  {getTimeAgo(task.createdAt)}
+                </span>
+              </div>
+              
+              <h3 className="font-semibold text-lg mb-2 group-hover:text-primary transition-colors line-clamp-2">
+                {task.title}
+              </h3>
+              
+              <p className="text-muted-foreground text-sm line-clamp-2 mb-4">
+                {task.description}
+              </p>
+              
+              {/* Batch indicator */}
+              {task.workerCount > 1 && (
+                <div className="flex items-center gap-2 mb-3 px-3 py-2 bg-accent/10 rounded-lg">
+                  <Users className="w-4 h-4 text-accent" />
+                  <span className="text-sm font-medium">
+                    {task.slotsFilled}/{task.workerCount} workers hired
+                  </span>
+                  <div className="flex-1 h-1.5 bg-accent/20 rounded-full overflow-hidden">
+                    <div 
+                      className="h-full bg-accent rounded-full transition-all"
+                      style={{ width: `${(task.slotsFilled / task.workerCount) * 100}%` }}
+                    />
+                  </div>
+                </div>
+              )}
+              
+              <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground mb-4">
+                {task.location && (
+                  <span className="flex items-center gap-1">
+                    <MapPin className="w-3.5 h-3.5" />
+                    {task.location}
+                  </span>
+                )}
+                {task.isVirtual && (
+                  <span className="flex items-center gap-1">
+                    <Globe className="w-3.5 h-3.5" />
+                    Remote
+                  </span>
+                )}
+                {task.applications.length > 0 && (
+                  <span className="flex items-center gap-1">
+                    <User className="w-3.5 h-3.5" />
+                    {task.applications.length} offers
+                  </span>
+                )}
+              </div>
+              
+              <div className="flex items-center justify-between pt-3 border-t border-slate-100 dark:border-slate-800">
+                {task.rewardAmount ? (
+                  <div>
+                    <div className="font-bold text-lg text-primary">
+                      {formatLocal(task.rewardAmount)}
+                    </div>
+                    {task.workerCount > 1 && task.rewardDescription && (
+                      <p className="text-xs text-muted-foreground">{task.rewardDescription}</p>
+                    )}
+                  </div>
+                ) : (
+                  <Badge variant="secondary" className="rounded-full">
+                    <Zap className="w-3 h-3 mr-1" /> Flexible
+                  </Badge>
+                )}
+                
+                <span className="text-sm text-primary font-medium flex items-center gap-1 group-hover:gap-2 transition-all">
+                  View Details <ChevronRight className="w-4 h-4" />
+                </span>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </Link>
+    </motion.div>
   );
 }
