@@ -17,6 +17,7 @@ import DiscoverPage from "@/pages/discover";
 import ProfilePage from "@/pages/profile";
 import PublicProfilePage from "@/pages/public-profile";
 import RequestDetails from "@/pages/request-details";
+import BatchManagementPage from "@/pages/batch-management";
 import MessagesPage from "@/pages/messages";
 import HowItWorks from "@/pages/how-it-works";
 import SafetyPage from "@/pages/safety";
@@ -50,6 +51,7 @@ function Router() {
       <Route path="/profile" component={ProfilePage} />
       <Route path="/public-profile/:userId" component={PublicProfilePage} />
       <Route path="/request/:id" component={RequestDetails} />
+      <Route path="/batch/:id" component={BatchManagementPage} />
       <Route path="/how-it-works" component={HowItWorks} />
       <Route path="/safety" component={SafetyPage} />
       <Route path="/stories" component={StoriesPage} />
@@ -73,20 +75,13 @@ function Router() {
 
 function MobileMenuOverlay() {
   const { isMobileMenuOpen, setIsMobileMenuOpen } = useMobileMenu();
-
   if (!isMobileMenuOpen) return null;
-
   return (
     <div
       className="fixed inset-0 z-40 md:hidden"
       style={{
-        position: "fixed",
-        top: 0,
-        left: "50%",
-        right: 0,
-        bottom: 0,
-        backgroundColor: "rgba(0, 0, 0, 0.12)",
-        cursor: "pointer",
+        position: "fixed", top: 0, left: "50%", right: 0, bottom: 0,
+        backgroundColor: "rgba(0, 0, 0, 0.12)", cursor: "pointer",
       }}
       onClick={() => setIsMobileMenuOpen(false)}
     />
