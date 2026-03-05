@@ -97,7 +97,7 @@ export default function CreateOfferPage() {
       });
 
       // Deduct from wallet (budget added to wallet, PTF stored as platform earnings)
-      deposit(formData.budget, ptf);
+      await initializeDeposit(formData.budget + ptf);
 
       setShowConfirm(false);
       setFormData({
