@@ -115,7 +115,7 @@ export function Footer() {
             <p className="text-sm text-slate-500">
               © {new Date().getFullYear()} HelpChain. All rights reserved.
             </p>
-            <div className="flex gap-6 text-sm text-slate-400">
+            <div className="flex gap-6 text-sm text-slate-400 pr-16">
               <Link href="/privacy" className="hover:text-white transition-colors">Privacy</Link>
               <Link href="/terms" className="hover:text-white transition-colors">Terms</Link>
               <Link href="/cookies" className="hover:text-white transition-colors">Cookies</Link>
