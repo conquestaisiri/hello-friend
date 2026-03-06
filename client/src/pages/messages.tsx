@@ -292,7 +292,7 @@ export default function MessagesPage() {
                   value={newMessage}
                   onChange={(e) => setNewMessage(e.target.value)}
                   placeholder="Type a message..."
-                  className="flex-1 bg-slate-100 dark:bg-zinc-800 border-0"
+                  className="flex-1 bg-muted border-0"
                 />
                 <Button 
                   type="submit" 
