@@ -183,7 +183,7 @@ export default function MessagesPage() {
                       <motion.button
                         key={conv.id}
                         onClick={() => setSelectedConversation(conv.id)}
-                        className="w-full bg-white dark:bg-zinc-900 p-4 rounded-xl shadow-sm hover:shadow-md transition-shadow text-left"
+                        className="w-full bg-card p-4 rounded-xl shadow-sm hover:shadow-md transition-shadow text-left"
                         whileTap={{ scale: 0.98 }}
                       >
                         <div className="flex items-center gap-3">
