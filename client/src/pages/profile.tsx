@@ -3,7 +3,6 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Skeleton } from "@/components/ui/skeleton";
 import { 
   MapPin, Calendar, Star, ShieldCheck, Edit2, Wallet, 
   ArrowUpRight, ArrowDownLeft, ChevronRight, User, 
@@ -11,9 +10,6 @@ import {
   Bell, History, Shield, Phone, Loader2
 } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
-import { useWallet } from "@/hooks/use-wallet";
-import { WalletDepositModal } from "@/components/payment/wallet-deposit-modal";
-import { WalletWithdrawModal } from "@/components/payment/wallet-withdraw-modal";
 import { useLocation } from "wouter";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -21,71 +17,58 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { useFirebaseAuth } from "@/hooks/use-firebase-auth";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import { useToast } from "@/hooks/use-toast";
+import { useProfileStore } from "@/stores/profile-store";
+import { useWalletLocalStore } from "@/stores/wallet-local-store";
+import { useLocalizationStore } from "@/stores/localization-store";
 
 function ProfilePageContent() {
-  const [depositOpen, setDepositOpen] = useState(false);
-  const [withdrawOpen, setWithdrawOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
-  const [activeSection, setActiveSection] = useState<string | null>(null);
   const [profileImage, setProfileImage] = useState<string | null>(null);
   const [, setLocation] = useLocation();
-  const walletData = useWallet();
-  const balance = walletData?.balance ?? 0;
-  const transactions = walletData?.transactions ?? [];
-  const isWithdrawalLocked = walletData?.isWithdrawalLocked;
-  const locked = isWithdrawalLocked ? isWithdrawalLocked() : false;
   const profileImageInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
   
-  const { user, getIdToken, logout } = useFirebaseAuth();
-  const queryClient = useQueryClient();
+  const { user, logout } = useFirebaseAuth();
+  const { availableBalance, escrowBalance, transactions } = useWalletLocalStore();
+  const { formatLocal } = useLocalizationStore();
+  const { getCurrentProfile, updateProfile, createProfile, setCurrentUser } = useProfileStore();
   
-  const { data: profile, isLoading: profileLoading, error: profileError } = useQuery({
-    queryKey: ['profile', user?.uid],
-    queryFn: async () => {
-      const token = await getIdToken();
-      if (!token) return null;
-      const res = await fetch('/api/profile', { 
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      if (!res.ok) return null;
-      return res.json();
-    },
-    enabled: !!user,
-  });
-  
-  const updateProfileMutation = useMutation({
-    mutationFn: async (data: any) => {
-      const token = await getIdToken();
-      if (!token) throw new Error('Not authenticated');
-      const res = await fetch('/api/profile', {
-        method: 'PUT',
-        headers: { 
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify(data),
-      });
-      if (!res.ok) throw new Error('Failed to update profile');
-      return res.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['profile', user?.uid] });
-      setEditOpen(false);
-      toast({ title: "Profile updated", description: "Your changes have been saved." });
-    },
-    onError: (error) => {
-      toast({ 
-        title: "Update failed", 
-        description: "Could not save your changes. Please try again.",
-        variant: "destructive"
-      });
+  // Sync Firebase user to profile store
+  useEffect(() => {
+    if (user) {
+      setCurrentUser(user.uid);
+      const existing = useProfileStore.getState().getProfileByUserId(user.uid);
+      if (!existing) {
+        createProfile({
+          id: `prof-${user.uid}`,
+          userId: user.uid,
+          fullName: user.displayName || 'User',
+          email: user.email || '',
+          bio: '',
+          avatarUrl: user.photoURL,
+          location: '',
+          country: 'NG',
+          baseCurrency: 'NGN',
+          rating: 0,
+          ratingCount: 0,
+          reputationScore: 100,
+          verificationTier: 1,
+          helpsGiven: 0,
+          helpsReceived: 0,
+          successRate: 0,
+          onTimeRate: 0,
+          responseTime: 'N/A',
+          joinedAt: new Date().toISOString().split('T')[0],
+          skills: [],
+          isFeatured: false,
+        });
+      }
     }
-  });
+  }, [user]);
   
+  const profile = getCurrentProfile();
   const displayName = profile?.fullName || user?.displayName || 'User';
   const initials = displayName.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2);
   
@@ -107,14 +90,14 @@ function ProfilePageContent() {
     }
   };
 
-  const recentTransactions = transactions.slice(0, 3);
+  const recentTransactions = transactions.slice(0, 5);
 
   const menuSections = [
     {
       title: "Account",
       items: [
         { icon: User, label: "Personal Information", onClick: () => setEditOpen(true) },
-        { icon: Shield, label: "Verification Status", badge: "Verified", badgeColor: "bg-emerald-500" },
+        { icon: Shield, label: "Verification Status", badge: profile?.verificationTier ? `Tier ${profile.verificationTier}` : "Tier 1", badgeColor: "bg-emerald-500", onClick: () => {} },
         { icon: Bell, label: "Notifications", onClick: () => {} },
       ]
     },
@@ -122,14 +105,14 @@ function ProfilePageContent() {
       title: "Wallet & Payments",
       items: [
         { icon: CreditCard, label: "Bank Accounts", onClick: () => {} },
-        { icon: History, label: "Transaction History", onClick: () => setActiveSection('transactions') },
+        { icon: History, label: "Transaction History", onClick: () => {} },
       ]
     },
     {
       title: "Support",
       items: [
         { icon: HelpCircle, label: "Help Center", onClick: () => setLocation('/help') },
-        { icon: Phone, label: "Contact Support", onClick: () => {} },
+        { icon: Phone, label: "Contact Support", onClick: () => setLocation('/contact') },
       ]
     },
   ];
@@ -143,34 +126,22 @@ function ProfilePageContent() {
     }
   };
 
-  if (profileLoading) {
-    return (
-      <div className="min-h-screen bg-slate-50 dark:bg-zinc-950">
-        <Navbar />
-        <div className="max-w-lg mx-auto px-4 pt-6 pb-24">
-          <div className="flex items-center gap-4 mb-6">
-            <Skeleton className="w-20 h-20 rounded-full" />
-            <div className="flex-1 space-y-2">
-              <Skeleton className="h-6 w-32" />
-              <Skeleton className="h-4 w-48" />
-              <Skeleton className="h-4 w-24" />
-            </div>
-          </div>
-          <Skeleton className="h-40 w-full rounded-2xl mb-4" />
-          <div className="grid grid-cols-3 gap-3 mb-4">
-            <Skeleton className="h-20 rounded-lg" />
-            <Skeleton className="h-20 rounded-lg" />
-            <Skeleton className="h-20 rounded-lg" />
-          </div>
-          <Skeleton className="h-32 w-full rounded-lg mb-4" />
-          <Skeleton className="h-48 w-full rounded-lg" />
-        </div>
-      </div>
-    );
-  }
+  const handleEditProfile = (e: React.FormEvent) => {
+    e.preventDefault();
+    const formData = new FormData(e.target as HTMLFormElement);
+    if (user) {
+      updateProfile(user.uid, {
+        fullName: formData.get('fullName') as string || displayName,
+        bio: formData.get('bio') as string || '',
+        location: formData.get('location') as string || '',
+      });
+      toast({ title: "Profile updated", description: "Your changes have been saved." });
+    }
+    setEditOpen(false);
+  };
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-zinc-950">
+    <div className="min-h-screen bg-muted/30">
       <Navbar />
       
       <div className="max-w-lg mx-auto px-4 pb-24">
@@ -181,20 +152,19 @@ function ProfilePageContent() {
           animate={{ opacity: 1, y: 0 }}
         >
           <div className="flex items-center gap-4">
-            {/* Avatar */}
             <div className="relative">
               <Avatar 
-                className="w-20 h-20 border-4 border-white dark:border-zinc-800 shadow-lg cursor-pointer" 
+                className="w-20 h-20 border-4 border-background shadow-lg cursor-pointer" 
                 onClick={() => profileImageInputRef.current?.click()}
               >
-                <AvatarImage src={profileImage || profile?.avatarUrl || `https://api.dicebear.com/7.x/initials/svg?seed=${displayName}`} />
-                <AvatarFallback className="text-xl font-bold bg-gradient-to-br from-primary to-accent text-white">
+                <AvatarImage src={profileImage || profile?.avatarUrl || user?.photoURL || undefined} />
+                <AvatarFallback className="text-xl font-bold bg-gradient-to-br from-primary to-accent text-primary-foreground">
                   {initials}
                 </AvatarFallback>
               </Avatar>
               <button 
                 onClick={() => profileImageInputRef.current?.click()}
-                className="absolute -bottom-1 -right-1 bg-primary text-white p-1.5 rounded-full border-2 border-white dark:border-zinc-800 shadow-md"
+                className="absolute -bottom-1 -right-1 bg-primary text-primary-foreground p-1.5 rounded-full border-2 border-background shadow-md"
               >
                 <Camera className="w-3 h-3" />
               </button>
@@ -207,20 +177,21 @@ function ProfilePageContent() {
               />
             </div>
             
-            {/* User Info */}
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 mb-1">
                 <h1 className="text-xl font-bold truncate">{displayName}</h1>
-                <ShieldCheck className="w-5 h-5 text-emerald-500 flex-shrink-0" />
+                {(profile?.verificationTier || 0) >= 2 && (
+                  <ShieldCheck className="w-5 h-5 text-primary flex-shrink-0" />
+                )}
               </div>
               <p className="text-sm text-muted-foreground truncate">{user?.email}</p>
               <div className="flex items-center gap-2 mt-1">
                 <div className="flex items-center gap-1">
-                  <Star className="w-4 h-4 text-amber-500 fill-amber-500" />
+                  <Star className="w-4 h-4 text-chart-4 fill-current" />
                   <span className="text-sm font-medium">{profile?.rating?.toFixed(1) || '0.0'}</span>
                 </div>
                 <span className="text-muted-foreground">·</span>
-                <span className="text-sm text-muted-foreground">{profile?.helpsGiven || 0} tasks completed</span>
+                <span className="text-sm text-muted-foreground">{profile?.helpsGiven || 0} tasks done</span>
               </div>
             </div>
           </div>
@@ -232,47 +203,47 @@ function ProfilePageContent() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
         >
-          <Card className="bg-gradient-to-br from-primary via-primary to-accent text-white border-0 shadow-xl mb-4 overflow-hidden">
+          <Card className="bg-gradient-to-br from-primary via-primary to-accent text-primary-foreground border-0 shadow-xl mb-4 overflow-hidden">
             <CardContent className="p-5">
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2">
                   <Wallet className="w-5 h-5" />
                   <span className="font-medium">My Wallet</span>
                 </div>
-                <Badge className="bg-white/20 text-white border-0">
+                <Badge className="bg-primary-foreground/20 text-primary-foreground border-0">
                   Active
                 </Badge>
               </div>
               
               <div className="mb-5">
-                <p className="text-white/70 text-sm mb-1">Available Balance</p>
-                <p className="text-3xl font-bold font-mono">₦{balance.toLocaleString()}</p>
+                <p className="text-primary-foreground/70 text-sm mb-1">Available Balance</p>
+                <p className="text-3xl font-bold font-mono">{formatLocal(availableBalance)}</p>
               </div>
+              
+              {escrowBalance > 0 && (
+                <div className="flex items-center gap-2 text-sm text-primary-foreground/60 mb-4">
+                  <Shield className="w-3.5 h-3.5" />
+                  <span>{formatLocal(escrowBalance)} locked in escrow</span>
+                </div>
+              )}
               
               <div className="flex gap-3">
                 <Button 
-                  className="flex-1 bg-white text-primary hover:bg-white/90 font-semibold h-11"
-                  onClick={() => setDepositOpen(true)}
+                  className="flex-1 bg-primary-foreground text-primary hover:bg-primary-foreground/90 font-semibold h-11"
+                  onClick={() => toast({ title: "Coming soon", description: "Deposit functionality will be available soon." })}
                 >
                   <ArrowDownLeft className="w-4 h-4 mr-2" />
                   Add Money
                 </Button>
                 <Button 
                   variant="outline"
-                  className={`flex-1 border-white/30 text-white hover:bg-white/10 font-semibold h-11 ${locked ? 'opacity-50' : ''}`}
-                  disabled={locked}
-                  onClick={() => setWithdrawOpen(true)}
+                  className="flex-1 border-primary-foreground/30 text-primary-foreground hover:bg-primary-foreground/10 font-semibold h-11"
+                  onClick={() => toast({ title: "Coming soon", description: "Withdraw functionality will be available soon." })}
                 >
                   <ArrowUpRight className="w-4 h-4 mr-2" />
                   Withdraw
                 </Button>
               </div>
-              
-              {locked && (
-                <p className="text-sm text-white/60 mt-3 text-center">
-                  Withdrawal locked during active task
-                </p>
-              )}
             </CardContent>
           </Card>
         </motion.div>
@@ -285,9 +256,9 @@ function ProfilePageContent() {
           transition={{ delay: 0.15 }}
         >
           {[
-            { label: "Rating", value: profile?.rating?.toFixed(1) || "0.0", icon: Star, color: "text-amber-500" },
-            { label: "Tasks", value: profile?.helpsGiven || 0, icon: FileText, color: "text-blue-500" },
-            { label: "Reviews", value: profile?.ratingCount || 0, icon: User, color: "text-purple-500" },
+            { label: "Rating", value: profile?.rating?.toFixed(1) || "0.0", icon: Star, color: "text-chart-4" },
+            { label: "Tasks", value: profile?.helpsGiven || 0, icon: FileText, color: "text-chart-2" },
+            { label: "Rep Score", value: profile?.reputationScore || 0, icon: Shield, color: "text-chart-3" },
           ].map((stat, i) => (
             <Card key={i} className="border-0 shadow-sm">
               <CardContent className="p-3 text-center">
@@ -310,23 +281,14 @@ function ProfilePageContent() {
               <CardContent className="p-4">
                 <div className="flex items-center justify-between mb-3">
                   <h3 className="font-semibold">Recent Activity</h3>
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
-                    className="text-primary h-8 px-2"
-                    onClick={() => setActiveSection('transactions')}
-                  >
-                    See all
-                    <ChevronRight className="w-4 h-4 ml-1" />
-                  </Button>
                 </div>
                 <div className="space-y-3">
                   {recentTransactions.map((txn) => (
                     <div key={txn.id} className="flex items-center gap-3">
                       <div className={`p-2 rounded-full ${
                         txn.type === 'deposit' 
-                          ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600' 
-                          : 'bg-orange-100 dark:bg-orange-900/30 text-orange-600'
+                          ? 'bg-primary/10 text-primary' 
+                          : 'bg-destructive/10 text-destructive'
                       }`}>
                         {txn.type === 'deposit' ? <ArrowDownLeft className="w-4 h-4" /> : <ArrowUpRight className="w-4 h-4" />}
                       </div>
@@ -337,9 +299,9 @@ function ProfilePageContent() {
                         </p>
                       </div>
                       <p className={`text-sm font-bold ${
-                        txn.type === 'deposit' ? 'text-emerald-600' : 'text-orange-600'
+                        txn.type === 'deposit' ? 'text-primary' : 'text-destructive'
                       }`}>
-                        {txn.type === 'deposit' ? '+' : '-'}₦{txn.amount.toLocaleString()}
+                        {txn.type === 'deposit' ? '+' : '-'}{formatLocal(txn.amount)}
                       </p>
                     </div>
                   ))}
@@ -365,16 +327,16 @@ function ProfilePageContent() {
                   <button
                     key={item.label}
                     onClick={item.onClick}
-                    className={`w-full flex items-center gap-3 px-4 py-3.5 hover:bg-slate-50 dark:hover:bg-zinc-800 transition-colors text-left ${
-                      itemIndex < section.items.length - 1 ? 'border-b border-slate-100 dark:border-zinc-800' : ''
+                    className={`w-full flex items-center gap-3 px-4 py-3.5 hover:bg-muted/50 transition-colors text-left ${
+                      itemIndex < section.items.length - 1 ? 'border-b border-border' : ''
                     }`}
                   >
-                    <div className="p-2 rounded-lg bg-slate-100 dark:bg-zinc-800">
-                      <item.icon className="w-4 h-4 text-slate-600 dark:text-slate-400" />
+                    <div className="p-2 rounded-lg bg-muted">
+                      <item.icon className="w-4 h-4 text-muted-foreground" />
                     </div>
                     <span className="flex-1 font-medium text-sm">{item.label}</span>
-                    {item.badge && (
-                      <Badge className={`${item.badgeColor} text-white text-xs`}>
+                    {'badge' in item && item.badge && (
+                      <Badge className={`${(item as any).badgeColor} text-primary-foreground text-xs`}>
                         {item.badge}
                       </Badge>
                     )}
@@ -394,7 +356,7 @@ function ProfilePageContent() {
         >
           <Button 
             variant="ghost" 
-            className="w-full text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 h-12"
+            className="w-full text-destructive hover:text-destructive hover:bg-destructive/10 h-12"
             onClick={handleLogout}
           >
             <LogOut className="w-4 h-4 mr-2" />
@@ -409,15 +371,7 @@ function ProfilePageContent() {
           <DialogHeader>
             <DialogTitle>Edit Profile</DialogTitle>
           </DialogHeader>
-          <form onSubmit={(e) => {
-            e.preventDefault();
-            const formData = new FormData(e.target as HTMLFormElement);
-            updateProfileMutation.mutate({
-              fullName: formData.get('fullName'),
-              bio: formData.get('bio'),
-              location: formData.get('location'),
-            });
-          }}>
+          <form onSubmit={handleEditProfile}>
             <div className="space-y-4 py-4">
               <div>
                 <Label htmlFor="fullName">Full Name</Label>
@@ -443,8 +397,8 @@ function ProfilePageContent() {
                 <Textarea 
                   id="bio" 
                   name="bio"
-                  placeholder="Tell people about yourself..."
-                  defaultValue={profile?.bio || ''} 
+                  placeholder="Tell us about yourself..."
+                  defaultValue={profile?.bio || ''}
                   className="mt-1.5 min-h-[100px]"
                 />
               </div>
@@ -453,60 +407,13 @@ function ProfilePageContent() {
               <Button type="button" variant="outline" onClick={() => setEditOpen(false)}>
                 Cancel
               </Button>
-              <Button type="submit" disabled={updateProfileMutation.isPending}>
-                {updateProfileMutation.isPending ? 'Saving...' : 'Save Changes'}
+              <Button type="submit">
+                Save Changes
               </Button>
             </DialogFooter>
           </form>
         </DialogContent>
       </Dialog>
-
-      {/* Transaction History Sheet */}
-      <Dialog open={activeSection === 'transactions'} onOpenChange={() => setActiveSection(null)}>
-        <DialogContent className="max-w-md mx-4 max-h-[80vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Transaction History</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-3 py-4">
-            {transactions.length > 0 ? (
-              transactions.map((txn) => (
-                <div key={txn.id} className="flex items-center gap-3 p-3 rounded-lg bg-slate-50 dark:bg-zinc-800">
-                  <div className={`p-2 rounded-full ${
-                    txn.type === 'deposit' 
-                      ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600' 
-                      : 'bg-orange-100 dark:bg-orange-900/30 text-orange-600'
-                  }`}>
-                    {txn.type === 'deposit' ? <ArrowDownLeft className="w-4 h-4" /> : <ArrowUpRight className="w-4 h-4" />}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium">{txn.description}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {new Date(txn.createdAt).toLocaleDateString()} at {new Date(txn.createdAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
-                    </p>
-                  </div>
-                  <div className="text-right">
-                    <p className={`text-sm font-bold ${
-                      txn.type === 'deposit' ? 'text-emerald-600' : 'text-orange-600'
-                    }`}>
-                      {txn.type === 'deposit' ? '+' : '-'}₦{txn.amount.toLocaleString()}
-                    </p>
-                    <Badge variant="outline" className="text-xs">{txn.status}</Badge>
-                  </div>
-                </div>
-              ))
-            ) : (
-              <div className="text-center py-8 text-muted-foreground">
-                <Wallet className="w-12 h-12 mx-auto mb-3 opacity-30" />
-                <p>No transactions yet</p>
-              </div>
-            )}
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* Modals */}
-      <WalletDepositModal isOpen={depositOpen} onClose={() => setDepositOpen(false)} />
-      <WalletWithdrawModal isOpen={withdrawOpen} onClose={() => setWithdrawOpen(false)} />
     </div>
   );
 }
