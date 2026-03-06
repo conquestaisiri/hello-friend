@@ -267,7 +267,7 @@ export default function MessagesPage() {
                         className={`max-w-[80%] rounded-2xl px-4 py-2.5 ${
                           msg.senderId === user?.uid
                             ? "bg-primary text-white rounded-br-md"
-                            : "bg-white dark:bg-zinc-800 shadow-sm rounded-bl-md"
+                            : "bg-card shadow-sm rounded-bl-md"
                         }`}
                       >
                         <p className="text-sm">{msg.content}</p>
