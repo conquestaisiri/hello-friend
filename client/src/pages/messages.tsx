@@ -219,7 +219,7 @@ export default function MessagesPage() {
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: 20 }}
-              className="flex flex-col h-full bg-white dark:bg-zinc-900"
+              className="flex flex-col h-full bg-card"
             >
               {/* Chat Header */}
               <div className="flex items-center gap-3 px-4 py-3 border-b bg-white dark:bg-zinc-900 sticky top-0 z-10">
