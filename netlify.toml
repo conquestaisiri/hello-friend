@@ -3,8 +3,8 @@
   base = "client"
   # The command to build your React app
   command = "npm install && npm run build"
-  # Where the finished files are located after building
-  publish = "dist"
+  # Updated to match the actual output location shown in your logs
+  publish = "dist/public"
 
 [[redirects]]
   # This fixes the "Page Not Found" on refresh
