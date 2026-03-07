@@ -19,6 +19,8 @@ import PublicProfilePage from "@/pages/public-profile";
 import RequestDetails from "@/pages/request-details";
 import BatchManagementPage from "@/pages/batch-management";
 import MessagesPage from "@/pages/messages";
+import WalletPage from "@/pages/wallet";
+import SettingsPage from "@/pages/settings";
 import HowItWorks from "@/pages/how-it-works";
 import SafetyPage from "@/pages/safety";
 import StoriesPage from "@/pages/stories";
@@ -48,6 +50,8 @@ function Router() {
       <Route path="/create-offer" component={CreateOfferPage} />
       <Route path="/admin" component={AdminDashboard} />
       <Route path="/messages" component={MessagesPage} />
+      <Route path="/wallet" component={WalletPage} />
+      <Route path="/settings" component={SettingsPage} />
       <Route path="/profile" component={ProfilePage} />
       <Route path="/public-profile/:userId" component={PublicProfilePage} />
       <Route path="/request/:id" component={RequestDetails} />

@@ -12,7 +12,11 @@ import {
   DropdownMenuTrigger 
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Menu, X, Bell, LogOut, User, MessageCircle, Search, Plus, Home, Sparkles, ChevronDown, Globe, MapPin } from "lucide-react";
+import { 
+  Menu, X, Bell, LogOut, User, MessageCircle, Search, 
+  Home, Sparkles, ChevronDown, Globe, MapPin, 
+  LayoutDashboard, Wallet, ClipboardList, Settings, HelpCircle, Plus
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 import { useSectorStore } from "@/stores/sector-store";
@@ -51,17 +55,13 @@ export function Navbar({ variant = 'default' }: NavbarProps) {
   const [profileImage, setProfileImage] = useState<string | null>(null);
   
   const isLandingPage = location === '/';
-  
-  // Only use transparent mode on landing page AND when not scrolled past hero
   const shouldBeTransparent = (variant === 'transparent' || isLandingPage) && !scrolled;
 
   useEffect(() => {
     const handleScroll = () => {
-      // Hero section is roughly 85vh, so trigger at about 80% of viewport height
       const heroHeight = window.innerHeight * 0.75;
       setScrolled(window.scrollY > heroHeight);
     };
-    // Check initial scroll position on mount
     handleScroll();
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
@@ -69,13 +69,8 @@ export function Navbar({ variant = 'default' }: NavbarProps) {
 
   useEffect(() => {
     const savedImage = localStorage.getItem("profilePicture");
-    if (savedImage) {
-      setProfileImage(savedImage);
-    }
-    const handleStorageChange = () => {
-      const updatedImage = localStorage.getItem("profilePicture");
-      setProfileImage(updatedImage);
-    };
+    if (savedImage) setProfileImage(savedImage);
+    const handleStorageChange = () => setProfileImage(localStorage.getItem("profilePicture"));
     window.addEventListener("storage", handleStorageChange);
     return () => window.removeEventListener("storage", handleStorageChange);
   }, []);
@@ -86,10 +81,9 @@ export function Navbar({ variant = 'default' }: NavbarProps) {
   ];
 
   const authNavLinks = [
-    { href: "/", label: "Home", icon: Home },
-    { href: "/dashboard", label: "Dashboard", icon: User },
-    { href: "/discover", label: "Find Tasks", icon: Search },
-    { href: "/create-request", label: "Post Task", icon: Plus },
+    { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+    { href: "/discover", label: "Tasks", icon: ClipboardList },
+    { href: "/wallet", label: "Wallet", icon: Wallet },
     { href: "/messages", label: "Messages", icon: MessageCircle },
   ];
 
@@ -98,10 +92,38 @@ export function Navbar({ variant = 'default' }: NavbarProps) {
   const handleLogout = async () => {
     try {
       await logout();
+      setLocation("/");
     } catch (error) {
       console.error("Logout failed:", error);
     }
   };
+
+  // Dropdown menu items for authenticated users
+  const dropdownItems = [
+    { href: "/profile", label: "Profile", icon: User },
+    { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+    { href: "/wallet", label: "Wallet", icon: Wallet },
+    { href: "/discover", label: "My Tasks", icon: ClipboardList },
+    { href: "/settings", label: "Settings", icon: Settings },
+    { href: "/help", label: "Help Center", icon: HelpCircle },
+  ];
+
+  // Mobile nav items (combined primary + secondary)
+  const mobileNavItems = user
+    ? [
+        { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+        { href: "/discover", label: "Tasks", icon: ClipboardList },
+        { href: "/wallet", label: "Wallet", icon: Wallet },
+        { href: "/messages", label: "Messages", icon: MessageCircle },
+        { href: "/create-request", label: "Post a Task", icon: Plus },
+      ]
+    : publicNavLinks;
+
+  const mobileSecondaryItems = [
+    { href: "/profile", label: "My Profile", icon: User },
+    { href: "/settings", label: "Settings", icon: Settings },
+    { href: "/help", label: "Help Center", icon: HelpCircle },
+  ];
 
   return (
     <>
@@ -113,7 +135,7 @@ export function Navbar({ variant = 'default' }: NavbarProps) {
           "sticky top-0 z-50 w-full transition-all duration-500",
           shouldBeTransparent 
             ? "bg-transparent" 
-            : "bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl shadow-lg shadow-slate-900/5 border-b border-slate-200/50 dark:border-slate-700/50"
+            : "bg-background/95 backdrop-blur-xl shadow-lg shadow-foreground/5 border-b border-border/50"
         )}
       >
         <div className="container mx-auto px-4">
@@ -121,6 +143,7 @@ export function Navbar({ variant = 'default' }: NavbarProps) {
             "flex items-center justify-between transition-all duration-300",
             shouldBeTransparent ? "py-2" : "py-1.5"
           )}>
+            {/* Logo */}
             <Link href="/">
               <motion.div 
                 className="flex items-center gap-2 cursor-pointer group"
@@ -128,7 +151,7 @@ export function Navbar({ variant = 'default' }: NavbarProps) {
                 whileTap={{ scale: 0.98 }}
               >
                 <div className="relative">
-                  <div className="h-8 w-8 bg-gradient-to-br from-primary to-accent rounded-lg flex items-center justify-center text-white font-bold shadow-md shadow-primary/25 group-hover:shadow-primary/40 transition-shadow">
+                  <div className="h-8 w-8 bg-gradient-to-br from-primary to-accent rounded-lg flex items-center justify-center text-primary-foreground font-bold shadow-md shadow-primary/25 group-hover:shadow-primary/40 transition-shadow">
                     <Sparkles size={18} />
                   </div>
                   <div className="absolute -inset-0.5 bg-gradient-to-br from-primary to-accent rounded-lg blur opacity-30 group-hover:opacity-50 transition-opacity -z-10" />
@@ -145,6 +168,7 @@ export function Navbar({ variant = 'default' }: NavbarProps) {
             {/* Sector Toggle */}
             <SectorToggle shouldBeTransparent={shouldBeTransparent} />
 
+            {/* Desktop Nav Links */}
             <div className="hidden md:flex items-center gap-1">
               {navLinks.map((link) => (
                 <Link key={link.href} href={link.href}>
@@ -157,7 +181,7 @@ export function Navbar({ variant = 'default' }: NavbarProps) {
                           : "text-white/80 hover:text-white hover:bg-white/10"
                         : location === link.href 
                           ? "bg-primary/10 text-primary" 
-                          : "text-muted-foreground hover:text-foreground hover:bg-slate-100 dark:hover:bg-slate-800"
+                          : "text-muted-foreground hover:text-foreground hover:bg-muted"
                     )}
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
@@ -169,11 +193,29 @@ export function Navbar({ variant = 'default' }: NavbarProps) {
               ))}
             </div>
 
+            {/* Desktop Right Section */}
             <div className="hidden md:flex items-center gap-3">
               {loading ? (
                 <div className="h-10 w-10 rounded-full bg-muted animate-pulse" />
               ) : user ? (
                 <>
+                  {/* Post Task CTA */}
+                  <Link href="/create-request">
+                    <Button 
+                      size="sm"
+                      className={cn(
+                        "rounded-full font-medium gap-1.5 transition-all",
+                        shouldBeTransparent
+                          ? "bg-white text-primary hover:bg-white/90 shadow-lg shadow-black/10"
+                          : "bg-gradient-to-r from-primary to-accent text-primary-foreground hover:opacity-90 shadow-md shadow-primary/25"
+                      )}
+                    >
+                      <Plus size={14} />
+                      Post Task
+                    </Button>
+                  </Link>
+
+                  {/* Notifications */}
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button 
@@ -183,7 +225,7 @@ export function Navbar({ variant = 'default' }: NavbarProps) {
                           "relative rounded-full transition-colors duration-300",
                           shouldBeTransparent 
                             ? "hover:bg-white/10" 
-                            : "hover:bg-slate-100 dark:hover:bg-slate-800"
+                            : "hover:bg-muted"
                         )}
                       >
                         <Bell className={cn(
@@ -193,8 +235,8 @@ export function Navbar({ variant = 'default' }: NavbarProps) {
                         <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-accent rounded-full" />
                       </Button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="w-80 p-0 rounded-2xl shadow-xl border-slate-200 dark:border-slate-700">
-                      <div className="p-4 border-b font-semibold text-sm bg-slate-50 dark:bg-slate-800 rounded-t-2xl">
+                    <DropdownMenuContent align="end" className="w-80 p-0 rounded-2xl shadow-xl border-border">
+                      <div className="p-4 border-b border-border font-semibold text-sm bg-muted rounded-t-2xl">
                         Notifications
                       </div>
                       <div className="p-8 text-center text-muted-foreground text-sm">
@@ -204,6 +246,7 @@ export function Navbar({ variant = 'default' }: NavbarProps) {
                     </DropdownMenuContent>
                   </DropdownMenu>
                   
+                  {/* User Dropdown */}
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button 
@@ -212,7 +255,7 @@ export function Navbar({ variant = 'default' }: NavbarProps) {
                           "relative h-10 gap-2 px-2 rounded-full transition-colors duration-300",
                           shouldBeTransparent 
                             ? "hover:bg-white/10" 
-                            : "hover:bg-slate-100 dark:hover:bg-slate-800"
+                            : "hover:bg-muted"
                         )}
                       >
                         <Avatar className={cn(
@@ -220,7 +263,7 @@ export function Navbar({ variant = 'default' }: NavbarProps) {
                           shouldBeTransparent ? "border-white/30" : "border-primary/20"
                         )}>
                           <AvatarImage src={user.photoURL || profileImage || undefined} alt={user.displayName || 'User'} />
-                          <AvatarFallback className="bg-gradient-to-br from-primary to-accent text-white text-sm font-medium">
+                          <AvatarFallback className="bg-gradient-to-br from-primary to-accent text-primary-foreground text-sm font-medium">
                             {user.displayName?.charAt(0).toUpperCase() || user.email?.charAt(0).toUpperCase() || 'U'}
                           </AvatarFallback>
                         </Avatar>
@@ -230,38 +273,58 @@ export function Navbar({ variant = 'default' }: NavbarProps) {
                         )} />
                       </Button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent className="w-56 rounded-2xl shadow-xl border-slate-200 dark:border-slate-700" align="end" forceMount>
-                      <DropdownMenuLabel className="font-normal p-4 bg-slate-50 dark:bg-slate-800 rounded-t-xl">
-                        <div className="flex flex-col space-y-1">
-                          <p className="text-sm font-semibold leading-none">{user.displayName || 'User'}</p>
-                          <p className="text-xs leading-none text-muted-foreground">
-                            {user.email}
-                          </p>
+                    <DropdownMenuContent className="w-64 rounded-2xl shadow-xl border-border p-0" align="end" forceMount>
+                      {/* User Info Header */}
+                      <DropdownMenuLabel className="font-normal p-4 bg-muted rounded-t-xl">
+                        <div className="flex items-center gap-3">
+                          <Avatar className="h-10 w-10 border-2 border-primary/20">
+                            <AvatarImage src={user.photoURL || profileImage || undefined} />
+                            <AvatarFallback className="bg-gradient-to-br from-primary to-accent text-primary-foreground text-sm font-medium">
+                              {user.displayName?.charAt(0).toUpperCase() || 'U'}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div className="flex flex-col">
+                            <p className="text-sm font-semibold leading-none">{user.displayName || 'User'}</p>
+                            <p className="text-xs leading-none text-muted-foreground mt-1">{user.email}</p>
+                          </div>
                         </div>
                       </DropdownMenuLabel>
-                      <DropdownMenuSeparator />
-                      <div className="p-1">
-                        <DropdownMenuItem asChild className="rounded-lg cursor-pointer">
-                          <Link href="/profile" className="w-full flex items-center gap-2 py-2">
-                            <User className="h-4 w-4" />
-                            My Profile
-                          </Link>
-                        </DropdownMenuItem>
-                        <DropdownMenuItem asChild className="rounded-lg cursor-pointer">
-                          <Link href="/dashboard" className="w-full flex items-center gap-2 py-2">
-                            <Home className="h-4 w-4" />
-                            Dashboard
-                          </Link>
-                        </DropdownMenuItem>
+                      <DropdownMenuSeparator className="my-0" />
+                      
+                      {/* Primary Actions */}
+                      <div className="p-1.5">
+                        {dropdownItems.slice(0, 4).map((item) => (
+                          <DropdownMenuItem key={item.href} asChild className="rounded-lg cursor-pointer px-3 py-2.5">
+                            <Link href={item.href} className="w-full flex items-center gap-3">
+                              <item.icon className="h-4 w-4 text-muted-foreground" />
+                              <span className="text-sm font-medium">{item.label}</span>
+                            </Link>
+                          </DropdownMenuItem>
+                        ))}
                       </div>
-                      <DropdownMenuSeparator />
-                      <div className="p-1">
+                      <DropdownMenuSeparator className="my-0" />
+                      
+                      {/* Secondary Actions */}
+                      <div className="p-1.5">
+                        {dropdownItems.slice(4).map((item) => (
+                          <DropdownMenuItem key={item.href} asChild className="rounded-lg cursor-pointer px-3 py-2.5">
+                            <Link href={item.href} className="w-full flex items-center gap-3">
+                              <item.icon className="h-4 w-4 text-muted-foreground" />
+                              <span className="text-sm font-medium">{item.label}</span>
+                            </Link>
+                          </DropdownMenuItem>
+                        ))}
+                      </div>
+                      <DropdownMenuSeparator className="my-0" />
+                      
+                      {/* Logout */}
+                      <div className="p-1.5">
                         <DropdownMenuItem 
                           onClick={handleLogout} 
-                          className="text-red-500 focus:text-red-500 focus:bg-red-50 dark:focus:bg-red-900/20 cursor-pointer rounded-lg"
+                          className="text-destructive focus:text-destructive focus:bg-destructive/10 cursor-pointer rounded-lg px-3 py-2.5"
                         >
-                          <LogOut className="mr-2 h-4 w-4" />
-                          Log out
+                          <LogOut className="mr-3 h-4 w-4" />
+                          <span className="text-sm font-medium">Log out</span>
                         </DropdownMenuItem>
                       </div>
                     </DropdownMenuContent>
@@ -276,7 +339,7 @@ export function Navbar({ variant = 'default' }: NavbarProps) {
                         "font-medium rounded-full px-5 transition-colors duration-300",
                         shouldBeTransparent 
                           ? "text-white hover:bg-white/10" 
-                          : "text-foreground hover:bg-slate-100"
+                          : "text-foreground hover:bg-muted"
                       )}
                     >
                       Log in
@@ -288,7 +351,7 @@ export function Navbar({ variant = 'default' }: NavbarProps) {
                         "font-semibold rounded-full px-6 transition-all hover:-translate-y-0.5 btn-shine",
                         shouldBeTransparent
                           ? "bg-white text-primary hover:bg-white/90 shadow-lg shadow-black/10"
-                          : "bg-gradient-to-r from-primary to-accent hover:opacity-90 text-white shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/30"
+                          : "bg-gradient-to-r from-primary to-accent hover:opacity-90 text-primary-foreground shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/30"
                       )}
                     >
                       Get Started
@@ -298,13 +361,14 @@ export function Navbar({ variant = 'default' }: NavbarProps) {
               )}
             </div>
 
+            {/* Mobile Menu Toggle */}
             <div className="flex md:hidden">
               <Button 
                 variant="ghost" 
                 size="icon" 
                 className={cn(
                   "rounded-full transition-colors duration-300",
-                  shouldBeTransparent ? "text-white hover:bg-white/10" : "hover:bg-slate-100"
+                  shouldBeTransparent ? "text-white hover:bg-white/10" : "hover:bg-muted"
                 )}
                 onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
               >
@@ -314,6 +378,7 @@ export function Navbar({ variant = 'default' }: NavbarProps) {
           </div>
         </div>
 
+        {/* Mobile Slide-out Menu */}
         <AnimatePresence>
           {isMobileMenuOpen && (
             <>
@@ -329,28 +394,30 @@ export function Navbar({ variant = 'default' }: NavbarProps) {
                 animate={{ x: 0, opacity: 1 }}
                 exit={{ x: "-100%", opacity: 0 }}
                 transition={{ type: "spring", damping: 25, stiffness: 300 }}
-                className="fixed left-0 top-0 h-screen w-[280px] bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-700 z-50 md:hidden shadow-2xl"
+                className="fixed left-0 top-0 h-screen w-[300px] bg-background border-r border-border z-50 md:hidden shadow-2xl"
               >
-                <div className="p-6 space-y-6 h-full flex flex-col">
+                <div className="p-6 space-y-6 h-full flex flex-col overflow-y-auto">
+                  {/* Header */}
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <div className="h-9 w-9 bg-gradient-to-br from-primary to-accent rounded-xl flex items-center justify-center text-white">
+                      <div className="h-9 w-9 bg-gradient-to-br from-primary to-accent rounded-xl flex items-center justify-center text-primary-foreground">
                         <Sparkles size={18} />
                       </div>
-                      <span className="text-lg font-bold">HelpChain</span>
+                      <span className="text-lg font-bold text-foreground">HelpChain</span>
                     </div>
                     <Button 
                       variant="ghost" 
                       size="icon" 
                       onClick={() => setIsMobileMenuOpen(false)}
-                      className="rounded-full hover:bg-slate-100 dark:hover:bg-slate-800"
+                      className="rounded-full hover:bg-muted"
                     >
                       <X className="h-5 w-5" />
                     </Button>
                   </div>
 
+                  {/* Primary Navigation */}
                   <div className="space-y-1">
-                    {navLinks.map((link) => (
+                    {mobileNavItems.map((link) => (
                       <Link key={link.href} href={link.href}>
                         <motion.div
                           whileTap={{ scale: 0.98 }}
@@ -359,7 +426,7 @@ export function Navbar({ variant = 'default' }: NavbarProps) {
                             "py-3 px-4 rounded-xl transition-colors cursor-pointer text-sm font-medium flex items-center gap-3",
                             location === link.href
                               ? "bg-primary/10 text-primary"
-                              : "text-foreground hover:bg-slate-100 dark:hover:bg-slate-800"
+                              : "text-foreground hover:bg-muted"
                           )}
                         >
                           <link.icon size={18} />
@@ -369,55 +436,70 @@ export function Navbar({ variant = 'default' }: NavbarProps) {
                     ))}
                   </div>
 
-                  <div className="h-px bg-slate-200 dark:bg-slate-700" />
+                  {user && (
+                    <>
+                      <div className="h-px bg-border" />
 
-                  <div className="space-y-1 flex-1">
-                    {user ? (
-                      <>
-                        <Link href="/profile">
-                          <motion.div
-                            whileTap={{ scale: 0.98 }}
-                            onClick={() => setIsMobileMenuOpen(false)}
-                            className="flex items-center gap-3 py-3 px-4 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer text-sm font-medium"
-                          >
-                            <User className="w-5 h-5 text-muted-foreground" />
-                            <span>My Profile</span>
-                          </motion.div>
-                        </Link>
-                        <motion.button
-                          whileTap={{ scale: 0.98 }}
-                          onClick={() => {
-                            handleLogout();
-                            setIsMobileMenuOpen(false);
-                          }}
-                          className="w-full flex items-center gap-3 py-3 px-4 rounded-xl hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors text-sm font-medium text-red-600"
-                        >
-                          <LogOut className="w-5 h-5" />
-                          <span>Log out</span>
-                        </motion.button>
-                      </>
-                    ) : (
-                      <div className="space-y-3 mt-auto pt-4">
-                        <Link href="/auth">
-                          <Button 
-                            variant="outline" 
-                            className="w-full justify-center font-medium rounded-xl h-12"
-                            onClick={() => setIsMobileMenuOpen(false)}
-                          >
-                            Log in
-                          </Button>
-                        </Link>
-                        <Link href="/auth?mode=signup">
-                          <Button 
-                            className="w-full justify-center bg-gradient-to-r from-primary to-accent hover:opacity-90 text-white font-semibold rounded-xl h-12"
-                            onClick={() => setIsMobileMenuOpen(false)}
-                          >
-                            Get Started
-                          </Button>
-                        </Link>
+                      {/* Secondary Navigation */}
+                      <div className="space-y-1">
+                        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-4 mb-2">Account</p>
+                        {mobileSecondaryItems.map((link) => (
+                          <Link key={link.href} href={link.href}>
+                            <motion.div
+                              whileTap={{ scale: 0.98 }}
+                              onClick={() => setIsMobileMenuOpen(false)}
+                              className={cn(
+                                "py-3 px-4 rounded-xl transition-colors cursor-pointer text-sm font-medium flex items-center gap-3",
+                                location === link.href
+                                  ? "bg-primary/10 text-primary"
+                                  : "text-foreground hover:bg-muted"
+                              )}
+                            >
+                              <link.icon size={18} className="text-muted-foreground" />
+                              {link.label}
+                            </motion.div>
+                          </Link>
+                        ))}
                       </div>
-                    )}
-                  </div>
+
+                      <div className="h-px bg-border" />
+
+                      {/* Logout */}
+                      <motion.button
+                        whileTap={{ scale: 0.98 }}
+                        onClick={() => {
+                          handleLogout();
+                          setIsMobileMenuOpen(false);
+                        }}
+                        className="w-full flex items-center gap-3 py-3 px-4 rounded-xl hover:bg-destructive/10 transition-colors text-sm font-medium text-destructive"
+                      >
+                        <LogOut className="w-5 h-5" />
+                        <span>Log out</span>
+                      </motion.button>
+                    </>
+                  )}
+
+                  {!user && (
+                    <div className="space-y-3 mt-auto pt-4">
+                      <Link href="/auth">
+                        <Button 
+                          variant="outline" 
+                          className="w-full justify-center font-medium rounded-xl h-12"
+                          onClick={() => setIsMobileMenuOpen(false)}
+                        >
+                          Log in
+                        </Button>
+                      </Link>
+                      <Link href="/auth?mode=signup">
+                        <Button 
+                          className="w-full justify-center bg-gradient-to-r from-primary to-accent hover:opacity-90 text-primary-foreground font-semibold rounded-xl h-12"
+                          onClick={() => setIsMobileMenuOpen(false)}
+                        >
+                          Get Started
+                        </Button>
+                      </Link>
+                    </div>
+                  )}
                 </div>
               </motion.div>
             </>
