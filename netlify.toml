@@ -1,19 +1,9 @@
 [build]
-  # Tell Netlify the frontend is in the client folder
   base = "client"
-  # The command to build your React app
   command = "npm install && npm run build"
-  # Updated to match the actual output location shown in your logs
-  publish = "dist/public"
+  publish = "dist"
 
 [[redirects]]
-  # This fixes the "Page Not Found" on refresh
   from = "/*"
   to = "/index.html"
-  status = 200
-
-[[redirects]]
-  # This points frontend API calls to your Replit backend
-  from = "/api/*"
-  to = "https://your-replit-backend-url.repl.co/api/:splat"
   status = 200
