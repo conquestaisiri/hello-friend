@@ -4,8 +4,6 @@ import tailwindcss from "@tailwindcss/vite";
 import path from "path";
 
 export default defineConfig(({ mode }) => {
-  const env = loadEnv(mode, process.cwd(), '');
-
   return {
     plugins: [
       react(),
@@ -13,18 +11,15 @@ export default defineConfig(({ mode }) => {
     ],
     resolve: {
       alias: {
-        "@": path.resolve(import.meta.dirname, "client", "src"),
-        "@assets": path.resolve(import.meta.dirname, "attached_assets"),
+        "@": path.resolve(import.meta.dirname, "src"),
+        "@assets": path.resolve(import.meta.dirname, "../attached_assets"),
       },
     },
-    css: {
-      postcss: {
-        plugins: [],
-      },
-    },
-    root: path.resolve(import.meta.dirname, "client"),
+    // Set the root to the 'client' directory
+    root: path.resolve(import.meta.dirname),
     build: {
-      outDir: path.resolve(import.meta.dirname, "dist/public"),
+      // This ensures output goes to 'client/dist'
+      outDir: path.resolve(import.meta.dirname, "dist"),
       emptyOutDir: true,
     },
     server: {
@@ -35,6 +30,5 @@ export default defineConfig(({ mode }) => {
         allow: [".."],
       },
     },
-    // Firebase config is now hardcoded in firebase.ts, no env overrides needed
   };
 });
