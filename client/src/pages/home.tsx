@@ -295,12 +295,15 @@ export default function Home() {
               <motion.div key={i} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.05 }}>
                 <Link href="/discover">
                   <Card className="group cursor-pointer hover:shadow-xl hover:-translate-y-1 transition-all duration-300 h-full rounded-2xl border-border overflow-hidden">
-                    <CardContent className="p-6">
-                      <div className={`h-12 w-12 rounded-xl bg-gradient-to-br ${cat.color} flex items-center justify-center mb-4 text-white shadow-lg group-hover:scale-110 transition-transform`}>
-                        <cat.icon className="h-6 w-6" />
-                      </div>
-                      <h3 className="font-bold text-foreground mb-1">{cat.label}</h3>
-                      <p className="text-sm text-muted-foreground">{cat.desc}</p>
+                    <CardContent className="p-5 md:p-6 text-center">
+                      <img
+                        src={cat.icon}
+                        alt={cat.label}
+                        className="w-16 h-16 md:w-20 md:h-20 mx-auto mb-3 object-contain group-hover:scale-110 transition-transform"
+                        loading="lazy"
+                      />
+                      <h3 className="font-bold text-foreground mb-1 text-sm md:text-base">{cat.label}</h3>
+                      <p className="text-xs md:text-sm text-muted-foreground">{cat.desc}</p>
                     </CardContent>
                   </Card>
                 </Link>
