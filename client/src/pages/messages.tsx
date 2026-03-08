@@ -1,312 +1,180 @@
-import { useState, useRef, useEffect } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useState } from "react";
 import { useFirebaseAuth } from "@/hooks/use-firebase-auth";
 import { Navbar } from "@/components/layout/navbar";
+import { Footer } from "@/components/layout/footer";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent } from "@/components/ui/card";
-import { Skeleton } from "@/components/ui/skeleton";
 import { Send, MessageCircle, ChevronLeft, Search } from "lucide-react";
-import { useLocation } from "wouter";
-import { format } from "date-fns";
+import { Redirect } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
 
-interface Conversation {
+interface MockConversation {
   id: string;
-  requestId: string | null;
-  participant1Id: string;
-  participant2Id: string;
-  createdAt: string;
-  updatedAt: string;
-  otherUserName?: string;
-  otherUserAvatar?: string;
-  lastMessage?: string;
+  name: string;
+  avatar: string;
+  lastMessage: string;
+  time: string;
+  unread: number;
 }
 
-interface Message {
+interface MockMessage {
   id: string;
-  conversationId: string;
   senderId: string;
   content: string;
-  isRead: boolean;
-  createdAt: string;
+  time: string;
 }
 
+const mockConversations: MockConversation[] = [
+  { id: "c1", name: "Sarah Chen", avatar: "https://i.pravatar.cc/150?u=sarah", lastMessage: "I can start the project tomorrow!", time: "2m ago", unread: 2 },
+  { id: "c2", name: "Emeka Nwankwo", avatar: "https://i.pravatar.cc/150?u=emeka", lastMessage: "The move is scheduled for Saturday", time: "1h ago", unread: 0 },
+  { id: "c3", name: "Priya Sharma", avatar: "https://i.pravatar.cc/150?u=priya", lastMessage: "Thanks for the great review!", time: "3h ago", unread: 0 },
+];
+
+const mockMessages: Record<string, MockMessage[]> = {
+  c1: [
+    { id: "m1", senderId: "other", content: "Hi! I saw your task posting for web development. I'd love to help.", time: "10:30 AM" },
+    { id: "m2", senderId: "me", content: "Great! Can you share some examples of your previous work?", time: "10:32 AM" },
+    { id: "m3", senderId: "other", content: "Of course! Here's my portfolio. I've built 20+ React projects.", time: "10:35 AM" },
+    { id: "m4", senderId: "me", content: "Impressive work. What's your timeline for this project?", time: "10:38 AM" },
+    { id: "m5", senderId: "other", content: "I can start the project tomorrow!", time: "10:40 AM" },
+  ],
+  c2: [
+    { id: "m6", senderId: "other", content: "Hello, I'm interested in helping with the office move.", time: "9:00 AM" },
+    { id: "m7", senderId: "me", content: "Great! Are you available this Saturday morning?", time: "9:15 AM" },
+    { id: "m8", senderId: "other", content: "The move is scheduled for Saturday", time: "9:20 AM" },
+  ],
+  c3: [
+    { id: "m9", senderId: "other", content: "Thanks for the great review!", time: "Yesterday" },
+  ],
+};
+
 export default function MessagesPage() {
-  const { user, loading: authLoading, getIdToken } = useFirebaseAuth();
-  const [, navigate] = useLocation();
-  const [selectedConversation, setSelectedConversation] = useState<string | null>(null);
+  const { user } = useFirebaseAuth();
+  const [selectedConv, setSelectedConv] = useState<string | null>(null);
   const [newMessage, setNewMessage] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
-  const queryClient = useQueryClient();
-  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const [localMessages, setLocalMessages] = useState(mockMessages);
 
-  const { data: conversations = [], isLoading: convLoading } = useQuery<Conversation[]>({
-    queryKey: ["conversations"],
-    queryFn: async () => {
-      const token = await getIdToken();
-      if (!token) return [];
-      const res = await fetch("/api/conversations", { 
-        headers: { "Authorization": `Bearer ${token}` } 
-      });
-      if (!res.ok) throw new Error("Failed to fetch conversations");
-      return res.json();
-    },
-    enabled: !!user,
-  });
+  if (!user) return <Redirect to="/auth" />;
 
-  const { data: messages = [], isLoading: messagesLoading } = useQuery<Message[]>({
-    queryKey: ["messages", selectedConversation],
-    queryFn: async () => {
-      if (!selectedConversation) return [];
-      const token = await getIdToken();
-      if (!token) return [];
-      const res = await fetch(`/api/conversations/${selectedConversation}/messages`, { 
-        headers: { "Authorization": `Bearer ${token}` } 
-      });
-      if (!res.ok) throw new Error("Failed to fetch messages");
-      return res.json();
-    },
-    enabled: !!selectedConversation,
-    refetchInterval: 3000,
-  });
-
-  const sendMessageMutation = useMutation({
-    mutationFn: async (content: string) => {
-      const token = await getIdToken();
-      if (!token) throw new Error("Please sign in");
-      const res = await fetch(`/api/conversations/${selectedConversation}/messages`, {
-        method: "POST",
-        headers: { 
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}` 
-        },
-        body: JSON.stringify({ content }),
-      });
-      if (!res.ok) throw new Error("Failed to send message");
-      return res.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["messages", selectedConversation] });
-      setNewMessage("");
-    },
-  });
-
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
-
-  if (authLoading) {
-    return (
-      <div className="min-h-screen bg-background">
-        <Navbar />
-        <div className="max-w-lg mx-auto px-4 pt-6">
-          <Skeleton className="h-8 w-32 mb-6" />
-          <div className="space-y-3">
-            <Skeleton className="h-20 w-full rounded-xl" />
-            <Skeleton className="h-20 w-full rounded-xl" />
-            <Skeleton className="h-20 w-full rounded-xl" />
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  if (!user) {
-    navigate("/auth?mode=login");
-    return null;
-  }
-
-  const handleSendMessage = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (newMessage.trim() && selectedConversation) {
-      sendMessageMutation.mutate(newMessage.trim());
-    }
-  };
-
-  const currentConversation = conversations.find(c => c.id === selectedConversation);
-
-  const filteredConversations = conversations.filter(conv => 
-    !searchQuery || conv.otherUserName?.toLowerCase().includes(searchQuery.toLowerCase())
+  const filteredConvs = mockConversations.filter(
+    (c) => !searchQuery || c.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
+  const currentConv = mockConversations.find((c) => c.id === selectedConv);
+  const messages = selectedConv ? localMessages[selectedConv] || [] : [];
+
+  const handleSend = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newMessage.trim() || !selectedConv) return;
+    const msg: MockMessage = {
+      id: `m-${Date.now()}`,
+      senderId: "me",
+      content: newMessage.trim(),
+      time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+    };
+    setLocalMessages((prev) => ({
+      ...prev,
+      [selectedConv]: [...(prev[selectedConv] || []), msg],
+    }));
+    setNewMessage("");
+  };
+
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen flex flex-col bg-background">
       <Navbar />
-      
-      <div className="max-w-lg mx-auto h-[calc(100vh-64px)] flex flex-col">
-        <AnimatePresence mode="wait">
-          {!selectedConversation ? (
-            <motion.div
-              key="list"
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
-              className="flex flex-col h-full"
-            >
-              {/* Header */}
-              <div className="px-4 pt-6 pb-4">
-                <h1 className="text-2xl font-bold mb-4">Messages</h1>
+      <main className="flex-1 container mx-auto px-4 py-6 max-w-4xl">
+        <div className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden" style={{ height: "calc(100vh - 160px)" }}>
+          <div className="flex h-full">
+            {/* Conversation List */}
+            <div className={`w-full md:w-80 border-r border-border flex flex-col ${selectedConv ? "hidden md:flex" : "flex"}`}>
+              <div className="p-4 border-b border-border">
+                <h2 className="text-lg font-bold text-foreground mb-3">Messages</h2>
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                  <Input
-                    placeholder="Search conversations..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="pl-10 bg-card border-0 shadow-sm"
-                  />
+                  <Input placeholder="Search..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="pl-10 bg-muted border-0" />
                 </div>
               </div>
-
-              {/* Conversations List */}
-              <div className="flex-1 overflow-y-auto px-4 pb-4">
-                {convLoading ? (
-                  <div className="space-y-3">
-                    <Skeleton className="h-20 w-full rounded-xl" />
-                    <Skeleton className="h-20 w-full rounded-xl" />
-                    <Skeleton className="h-20 w-full rounded-xl" />
-                  </div>
-                ) : filteredConversations.length === 0 ? (
-                  <Card className="border-0 shadow-sm">
-                    <CardContent className="p-8 text-center">
-                      <MessageCircle className="w-12 h-12 mx-auto mb-3 text-muted-foreground/30" />
-                      <p className="text-muted-foreground mb-2">No conversations yet</p>
-                      <p className="text-sm text-muted-foreground">
-                        Start by offering help on a task!
-                      </p>
-                    </CardContent>
-                  </Card>
-                ) : (
-                  <div className="space-y-2">
-                    {filteredConversations.map((conv) => (
-                      <motion.button
-                        key={conv.id}
-                        onClick={() => setSelectedConversation(conv.id)}
-                        className="w-full bg-card p-4 rounded-xl shadow-sm hover:shadow-md transition-shadow text-left"
-                        whileTap={{ scale: 0.98 }}
-                      >
-                        <div className="flex items-center gap-3">
-                          <Avatar className="w-12 h-12">
-                            <AvatarImage src={conv.otherUserAvatar} />
-                            <AvatarFallback className="bg-gradient-to-br from-primary to-accent text-white">
-                              {conv.otherUserName?.charAt(0) || 'U'}
-                            </AvatarFallback>
-                          </Avatar>
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center justify-between mb-1">
-                              <p className="font-semibold truncate">
-                                {conv.otherUserName || 'User'}
-                              </p>
-                              <span className="text-xs text-muted-foreground">
-                                {format(new Date(conv.updatedAt), "MMM d")}
-                              </span>
-                            </div>
-                            <p className="text-sm text-muted-foreground truncate">
-                              {conv.lastMessage || 'No messages yet'}
-                            </p>
-                          </div>
-                        </div>
-                      </motion.button>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </motion.div>
-          ) : (
-            <motion.div
-              key="chat"
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: 20 }}
-              className="flex flex-col h-full bg-card"
-            >
-              {/* Chat Header */}
-              <div className="flex items-center gap-3 px-4 py-3 border-b bg-card sticky top-0 z-10">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => setSelectedConversation(null)}
-                  className="shrink-0"
-                >
-                  <ChevronLeft className="w-5 h-5" />
-                </Button>
-                <Avatar className="w-10 h-10">
-                  <AvatarImage src={currentConversation?.otherUserAvatar} />
-                  <AvatarFallback className="bg-gradient-to-br from-primary to-accent text-white">
-                    {currentConversation?.otherUserName?.charAt(0) || 'U'}
-                  </AvatarFallback>
-                </Avatar>
-                <div className="flex-1 min-w-0">
-                  <p className="font-semibold truncate">
-                    {currentConversation?.otherUserName || 'User'}
-                  </p>
-                  <p className="text-xs text-muted-foreground">Tap to view profile</p>
-                </div>
-              </div>
-
-              {/* Messages */}
-              <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-background">
-                {messagesLoading ? (
-                  <div className="flex justify-center py-8">
-                    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary" />
-                  </div>
-                ) : messages.length === 0 ? (
-                  <div className="text-center py-12 text-muted-foreground">
-                    <MessageCircle className="w-12 h-12 mx-auto mb-3 opacity-30" />
-                    <p>No messages yet</p>
-                    <p className="text-sm">Start the conversation!</p>
+              <div className="flex-1 overflow-y-auto">
+                {filteredConvs.length === 0 ? (
+                  <div className="p-8 text-center">
+                    <MessageCircle className="w-10 h-10 mx-auto mb-3 text-muted-foreground/30" />
+                    <p className="text-sm text-muted-foreground">No conversations yet</p>
                   </div>
                 ) : (
-                  messages.map((msg) => (
-                    <div
-                      key={msg.id}
-                      className={`flex ${msg.senderId === user?.uid ? "justify-end" : "justify-start"}`}
+                  filteredConvs.map((conv) => (
+                    <button
+                      key={conv.id}
+                      onClick={() => setSelectedConv(conv.id)}
+                      className={`w-full p-4 flex items-center gap-3 hover:bg-muted/50 transition-colors text-left border-b border-border/50 ${selectedConv === conv.id ? "bg-muted" : ""}`}
                     >
-                      <div
-                        className={`max-w-[80%] rounded-2xl px-4 py-2.5 ${
-                          msg.senderId === user?.uid
-                            ? "bg-primary text-white rounded-br-md"
-                            : "bg-card shadow-sm rounded-bl-md"
-                        }`}
-                      >
-                        <p className="text-sm">{msg.content}</p>
-                        <p className={`text-xs mt-1 ${
-                          msg.senderId === user?.uid ? "text-white/70" : "text-muted-foreground"
-                        }`}>
-                          {format(new Date(msg.createdAt), "h:mm a")}
-                        </p>
+                      <Avatar className="w-10 h-10">
+                        <AvatarImage src={conv.avatar} />
+                        <AvatarFallback>{conv.name[0]}</AvatarFallback>
+                      </Avatar>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between mb-0.5">
+                          <p className="font-semibold text-sm text-foreground truncate">{conv.name}</p>
+                          <span className="text-xs text-muted-foreground">{conv.time}</span>
+                        </div>
+                        <p className="text-sm text-muted-foreground truncate">{conv.lastMessage}</p>
                       </div>
-                    </div>
+                      {conv.unread > 0 && (
+                        <span className="h-5 w-5 rounded-full bg-primary text-primary-foreground text-xs flex items-center justify-center font-bold">{conv.unread}</span>
+                      )}
+                    </button>
                   ))
                 )}
-                <div ref={messagesEndRef} />
               </div>
+            </div>
 
-              {/* Message Input */}
-              <form 
-                onSubmit={handleSendMessage} 
-                className="p-4 bg-card border-t flex gap-2 sticky bottom-0"
-              >
-                <Input
-                  value={newMessage}
-                  onChange={(e) => setNewMessage(e.target.value)}
-                  placeholder="Type a message..."
-                  className="flex-1 bg-muted border-0"
-                />
-                <Button 
-                  type="submit" 
-                  size="icon"
-                  disabled={!newMessage.trim() || sendMessageMutation.isPending}
-                  className="shrink-0"
-                >
-                  <Send className="w-4 h-4" />
-                </Button>
-              </form>
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </div>
+            {/* Chat Area */}
+            <div className={`flex-1 flex flex-col ${!selectedConv ? "hidden md:flex" : "flex"}`}>
+              {!selectedConv ? (
+                <div className="flex-1 flex items-center justify-center">
+                  <div className="text-center">
+                    <MessageCircle className="w-16 h-16 mx-auto mb-4 text-muted-foreground/20" />
+                    <p className="text-muted-foreground">Select a conversation to start messaging</p>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <div className="flex items-center gap-3 px-4 py-3 border-b border-border">
+                    <Button variant="ghost" size="icon" onClick={() => setSelectedConv(null)} className="md:hidden">
+                      <ChevronLeft className="w-5 h-5" />
+                    </Button>
+                    <Avatar className="w-9 h-9">
+                      <AvatarImage src={currentConv?.avatar} />
+                      <AvatarFallback>{currentConv?.name?.[0]}</AvatarFallback>
+                    </Avatar>
+                    <p className="font-semibold text-foreground">{currentConv?.name}</p>
+                  </div>
+
+                  <div className="flex-1 overflow-y-auto p-4 space-y-3">
+                    {messages.map((msg) => (
+                      <div key={msg.id} className={`flex ${msg.senderId === "me" ? "justify-end" : "justify-start"}`}>
+                        <div className={`max-w-[75%] rounded-2xl px-4 py-2.5 ${msg.senderId === "me" ? "bg-primary text-primary-foreground rounded-br-md" : "bg-muted text-foreground rounded-bl-md"}`}>
+                          <p className="text-sm">{msg.content}</p>
+                          <p className={`text-xs mt-1 ${msg.senderId === "me" ? "text-primary-foreground/60" : "text-muted-foreground"}`}>{msg.time}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  <form onSubmit={handleSend} className="p-4 border-t border-border flex gap-2">
+                    <Input value={newMessage} onChange={(e) => setNewMessage(e.target.value)} placeholder="Type a message..." className="flex-1 bg-muted border-0" />
+                    <Button type="submit" size="icon" disabled={!newMessage.trim()}>
+                      <Send className="w-4 h-4" />
+                    </Button>
+                  </form>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      </main>
     </div>
   );
 }
