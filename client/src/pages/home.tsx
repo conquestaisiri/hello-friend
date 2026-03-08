@@ -395,23 +395,23 @@ export default function Home() {
             </p>
           </motion.div>
 
-          <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+          <div className="grid md:grid-cols-3 gap-6 md:gap-8 max-w-5xl mx-auto">
             {[
-              { step: "01", title: "Post your task", desc: "Describe what you need, set your budget and deadline. It takes just 2 minutes.", icon: FileText, color: "from-primary to-primary/80" },
-              { step: "02", title: "Get matched", desc: "Receive proposals from verified workers worldwide. Compare skills, ratings, and prices.", icon: Users, color: "from-secondary to-secondary/80" },
-              { step: "03", title: "Pay securely", desc: "Funds are held in escrow until the task is completed to your satisfaction.", icon: Shield, color: "from-accent to-accent/80" },
+              { step: "01", title: "Post your task", desc: "Describe what you need, set your budget and deadline. It takes just 2 minutes.", icon: "/images/icons/post-task.png" },
+              { step: "02", title: "Get matched", desc: "Receive proposals from verified workers worldwide. Compare skills, ratings, and prices.", icon: "/images/icons/get-matched.png" },
+              { step: "03", title: "Pay securely", desc: "Funds are held in escrow until the task is completed to your satisfaction.", icon: "/images/icons/pay-secure.png" },
             ].map((item, i) => (
               <motion.div key={i} initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.15 }}>
                 <div className="text-center relative">
                   {i < 2 && (
                     <div className="hidden md:block absolute top-16 left-[60%] w-[80%] border-t-2 border-dashed border-border" />
                   )}
-                  <div className={`w-20 h-20 rounded-3xl bg-gradient-to-br ${item.color} flex items-center justify-center mx-auto mb-6 text-white shadow-xl relative z-10`}>
-                    <item.icon className="w-9 h-9" />
+                  <div className="w-24 h-24 md:w-28 md:h-28 mx-auto mb-6 relative z-10">
+                    <img src={item.icon} alt={item.title} className="w-full h-full object-contain" loading="lazy" />
                   </div>
                   <span className="text-sm font-bold text-primary mb-2 block">Step {item.step}</span>
-                  <h3 className="font-bold text-xl mb-3 text-foreground">{item.title}</h3>
-                  <p className="text-muted-foreground leading-relaxed max-w-xs mx-auto">{item.desc}</p>
+                  <h3 className="font-bold text-lg md:text-xl mb-3 text-foreground">{item.title}</h3>
+                  <p className="text-sm md:text-base text-muted-foreground leading-relaxed max-w-xs mx-auto">{item.desc}</p>
                 </div>
               </motion.div>
             ))}
