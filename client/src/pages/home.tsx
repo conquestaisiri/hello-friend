@@ -237,6 +237,65 @@ export default function Home() {
         </div>
       </section>
 
+      {/* Featured Workers Showcase */}
+      <section className="py-20 bg-card border-y border-border">
+        <div className="container mx-auto px-4">
+          <motion.div className="text-center max-w-2xl mx-auto mb-16" initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
+            <Badge className="mb-4 px-4 py-1.5 bg-chart-2/10 text-chart-2 border-chart-2/20 rounded-full">
+              <Users className="w-4 h-4 mr-2" />
+              Workers Worldwide
+            </Badge>
+            <h2 className="text-3xl md:text-4xl font-bold mb-4 text-foreground">Real people, real skills</h2>
+            <p className="text-lg text-muted-foreground">
+              From freelance designers to delivery pros — our workers come from every corner of the globe.
+            </p>
+          </motion.div>
+
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {[
+              { src: "/images/worker-freelancer.jpg", name: "Sofia", role: "Freelance Developer", location: "Mexico City" },
+              { src: "/images/worker-handyman.jpg", name: "Raj", role: "Home Services Pro", location: "Mumbai" },
+              { src: "/images/worker-delivery.jpg", name: "Kelechi", role: "Courier & Logistics", location: "Lagos" },
+              { src: "/images/worker-designer.jpg", name: "Yuki", role: "Graphic Designer", location: "Tokyo" },
+            ].map((worker, i) => (
+              <motion.div key={i} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.1 }}>
+                <Card className="group overflow-hidden border-border hover:shadow-xl transition-all duration-300">
+                  <div className="aspect-square overflow-hidden">
+                    <img
+                      src={worker.src}
+                      alt={`${worker.name} - ${worker.role}`}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                      loading="lazy"
+                    />
+                  </div>
+                  <CardContent className="p-4">
+                    <h4 className="font-semibold text-foreground">{worker.name}</h4>
+                    <p className="text-sm text-primary font-medium">{worker.role}</p>
+                    <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
+                      <MapPin className="w-3 h-3" /> {worker.location}
+                    </p>
+                    <div className="flex items-center gap-1 mt-2">
+                      {[...Array(5)].map((_, j) => (
+                        <Star key={j} className="w-3.5 h-3.5 fill-chart-4 text-chart-4" />
+                      ))}
+                      <span className="text-xs text-muted-foreground ml-1">5.0</span>
+                    </div>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            ))}
+          </div>
+
+          <div className="text-center mt-10">
+            <Link href="/discover">
+              <Button size="lg" className="rounded-full px-8 bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg">
+                Browse All Tasks <ArrowRight className="ml-2 h-5 w-5" />
+              </Button>
+            </Link>
+          </div>
+        </div>
+      </section>
+
       {/* How it Works */}
       <section className="py-20 bg-muted/50">
         <div className="container mx-auto px-4">
@@ -281,28 +340,24 @@ export default function Home() {
 
             <motion.div className="grid grid-cols-2 gap-4" initial={{ opacity: 0, x: 30 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }}>
               <div className="space-y-4">
+                <div className="rounded-2xl overflow-hidden shadow-lg">
+                  <img src="/images/worker-tutor.jpg" alt="Tutor helping a student" className="w-full h-48 object-cover" loading="lazy" />
+                </div>
                 <Card className="p-6 border-border hover:shadow-lg transition-shadow">
                   <Shield className="w-10 h-10 text-primary mb-4" />
                   <h4 className="font-semibold mb-2 text-foreground">Escrow Protection</h4>
                   <p className="text-sm text-muted-foreground">Payments held securely until task completion</p>
                 </Card>
+              </div>
+              <div className="space-y-4 pt-8">
                 <Card className="p-6 border-border hover:shadow-lg transition-shadow">
                   <CheckCircle2 className="w-10 h-10 text-chart-2 mb-4" />
                   <h4 className="font-semibold mb-2 text-foreground">Verified Workers</h4>
                   <p className="text-sm text-muted-foreground">Identity verification and reputation scores</p>
                 </Card>
-              </div>
-              <div className="space-y-4 pt-8">
-                <Card className="p-6 border-border hover:shadow-lg transition-shadow">
-                  <Clock className="w-10 h-10 text-chart-4 mb-4" />
-                  <h4 className="font-semibold mb-2 text-foreground">Fast Matching</h4>
-                  <p className="text-sm text-muted-foreground">Get offers within minutes of posting</p>
-                </Card>
-                <Card className="p-6 border-border hover:shadow-lg transition-shadow">
-                  <Globe className="w-10 h-10 text-accent mb-4" />
-                  <h4 className="font-semibold mb-2 text-foreground">Global Reach</h4>
-                  <p className="text-sm text-muted-foreground">Connect with talent from 120+ countries</p>
-                </Card>
+                <div className="rounded-2xl overflow-hidden shadow-lg">
+                  <img src="/images/worker-delivery.jpg" alt="Delivery worker with package" className="w-full h-48 object-cover" loading="lazy" />
+                </div>
               </div>
             </motion.div>
           </div>
