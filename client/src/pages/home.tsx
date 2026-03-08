@@ -110,8 +110,10 @@ export default function Home() {
 
       {/* Hero */}
       <section className="relative min-h-[90vh] flex items-center overflow-hidden -mt-16">
-        <div className="absolute inset-0 bg-gradient-to-br from-primary/90 via-primary/80 to-accent/70" />
-        <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmYiIGZpbGwtb3BhY2l0eT0iMC4wNSI+PGNpcmNsZSBjeD0iMzAiIGN5PSIzMCIgcj0iMiIvPjwvZz48L2c+PC9zdmc+')] opacity-50" />
+        <div className="absolute inset-0">
+          <img src="/images/hero-workers.jpg" alt="Diverse professionals collaborating" className="w-full h-full object-cover" />
+          <div className="absolute inset-0 bg-gradient-to-br from-primary/85 via-primary/75 to-accent/65" />
+        </div>
 
         <div className="container mx-auto px-4 md:px-8 relative z-10 pt-32 md:pt-40 pb-16">
           <div className="max-w-3xl mx-auto text-center">
