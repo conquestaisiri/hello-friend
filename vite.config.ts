@@ -4,14 +4,15 @@ import tailwindcss from "@tailwindcss/vite";
 import path from "path";
 
 export default defineConfig({
+  root: "client",
   plugins: [react(), tailwindcss()],
   resolve: {
     alias: {
-      "@": path.resolve(__dirname, "src"),
+      "@": path.resolve(__dirname, "client/src"),
     },
   },
   build: {
-    outDir: "dist", // This creates client/dist/
+    outDir: "../dist",
     emptyOutDir: true,
   },
 });

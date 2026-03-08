@@ -18,5 +18,5 @@
     "types": ["node", "vite/client"]
   },
   "exclude": ["node_modules", "build", "dist"],
-  "include": ["client/src/**/*"]
+  "include": ["client/src/**/*", "src/**/*"]
 }
