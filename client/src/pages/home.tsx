@@ -235,7 +235,7 @@ export default function Home() {
                 transition={{ delay: i * 0.1 }}
               >
                 <stat.icon className="w-8 h-8 text-primary mx-auto mb-3" />
-                <p className="text-3xl md:text-4xl font-bold text-foreground mb-1">{stat.value}</p>
+                <p className="text-2xl md:text-3xl lg:text-4xl font-bold text-foreground mb-1">{stat.value}</p>
                 <p className="text-sm text-muted-foreground font-medium">{stat.label}</p>
               </motion.div>
             ))}
