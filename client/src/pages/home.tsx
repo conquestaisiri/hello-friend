@@ -387,7 +387,7 @@ export default function Home() {
             <Badge className="mb-5 px-4 py-1.5 bg-accent/10 text-accent border-accent/20 rounded-full">
               How It Works
             </Badge>
-            <h2 className="text-4xl md:text-5xl font-bold mb-5 text-foreground font-heading">
+             <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-5 text-foreground font-heading">
               Three simple steps
             </h2>
             <p className="text-lg text-muted-foreground">
