@@ -507,7 +507,7 @@ export default function Home() {
         <div className="absolute bottom-0 right-0 w-96 h-96 bg-secondary/5 rounded-full translate-x-1/3 translate-y-1/3" />
         <div className="container mx-auto px-4 relative z-10">
           <motion.div className="text-center max-w-2xl mx-auto mb-16" initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
-            <h2 className="text-4xl md:text-5xl font-bold mb-5 text-foreground font-heading">
+            <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-5 text-foreground font-heading">
               What people are saying
             </h2>
             <p className="text-lg text-muted-foreground max-w-lg mx-auto">
