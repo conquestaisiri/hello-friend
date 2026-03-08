@@ -548,7 +548,7 @@ export default function Home() {
 
       {/* ═══════════ CTA ═══════════ */}
       <section className="relative py-32 overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-[hsl(222,80%,18%)] via-[hsl(222,70%,12%)] to-[hsl(222,60%,8%)]" />
+        <div className="absolute inset-0 bg-gradient-to-br from-[hsl(145,60%,14%)] via-[hsl(145,50%,10%)] to-[hsl(145,40%,6%)]" />
         <div className="absolute inset-0 opacity-[0.07]" style={{ backgroundImage: 'radial-gradient(circle at 25% 25%, white 1px, transparent 1px), radial-gradient(circle at 75% 75%, white 1px, transparent 1px)', backgroundSize: '50px 50px' }} />
         <div className="absolute top-1/3 left-1/4 w-80 h-80 bg-accent/15 rounded-full blur-[100px]" />
         <div className="absolute bottom-1/4 right-1/4 w-64 h-64 bg-secondary/20 rounded-full blur-[80px]" />
