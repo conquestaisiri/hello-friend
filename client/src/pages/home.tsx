@@ -442,7 +442,7 @@ export default function Home() {
               <Badge className="mb-5 px-4 py-1.5 bg-secondary/10 text-secondary border-secondary/20 rounded-full">
                 Platform Preview
               </Badge>
-              <h2 className="text-4xl md:text-5xl font-bold mb-6 text-foreground font-heading leading-tight">
+              <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-6 text-foreground font-heading leading-tight">
                 A beautiful interface
                 <br />
                 <span className="text-gradient">built for everyone</span>
