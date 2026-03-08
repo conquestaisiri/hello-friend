@@ -282,7 +282,7 @@ export default function Home() {
       <section className="py-24 bg-muted/30 border-y border-border">
         <div className="container mx-auto px-4">
           <motion.div className="text-center max-w-2xl mx-auto mb-16" initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
-            <h2 className="text-4xl md:text-5xl font-bold mb-5 text-foreground font-heading">
+             <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-5 text-foreground font-heading">
               Explore task categories
             </h2>
             <p className="text-lg text-muted-foreground">
