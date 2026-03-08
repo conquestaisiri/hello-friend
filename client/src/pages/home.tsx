@@ -8,7 +8,8 @@ import {
   Search, ArrowRight, Shield, Clock, Star, CheckCircle2,
   Sparkles, Users, ChevronRight, Globe, Briefcase, Code,
   Palette, BookOpen, Megaphone, Languages, MessageCircle,
-  Home as HomeIcon, Wrench, GraduationCap, FileText, HelpCircle, MapPin
+  Home as HomeIcon, Wrench, GraduationCap, FileText, HelpCircle, MapPin,
+  Zap, Lock, Eye, TrendingUp, Play, Package, Truck
 } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { motion } from "framer-motion";
@@ -16,14 +17,14 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useState, useEffect } from "react";
 
 const typingPhrases = [
-  "web development",
-  "graphic design",
   "home cleaning",
-  "data entry",
+  "graphic design",
+  "delivery help",
+  "web development",
+  "furniture moving",
   "content writing",
-  "translation",
   "tutoring",
-  "marketing",
+  "repairs & fixing",
 ];
 
 export default function Home() {
@@ -63,21 +64,35 @@ export default function Home() {
   };
 
   const categories = [
-    { label: "Digital Work", icon: Code, desc: "Development, data entry, virtual assistance" },
-    { label: "Design", icon: Palette, desc: "Graphics, UI/UX, branding, video editing" },
-    { label: "Writing", icon: FileText, desc: "Content, copywriting, editing, blogs" },
-    { label: "Marketing", icon: Megaphone, desc: "Social media, SEO, ads, campaigns" },
-    { label: "Education", icon: GraduationCap, desc: "Tutoring, mentoring, course creation" },
-    { label: "Translation", icon: Languages, desc: "Documents, websites, localization" },
-    { label: "Home Services", icon: HomeIcon, desc: "Cleaning, repairs, moving, assembly" },
-    { label: "Consulting", icon: Briefcase, desc: "Business, legal, finance, strategy" },
+    { label: "Home Services", icon: HomeIcon, desc: "Cleaning, repairs, moving, assembly", color: "from-blue-500 to-blue-600" },
+    { label: "Tech Help", icon: Code, desc: "Development, IT support, troubleshooting", color: "from-purple-500 to-purple-600" },
+    { label: "Design", icon: Palette, desc: "Graphics, UI/UX, branding, video", color: "from-pink-500 to-pink-600" },
+    { label: "Writing", icon: FileText, desc: "Content, copywriting, editing", color: "from-amber-500 to-amber-600" },
+    { label: "Delivery", icon: Truck, desc: "Packages, errands, logistics", color: "from-green-500 to-green-600" },
+    { label: "Education", icon: GraduationCap, desc: "Tutoring, homework, mentoring", color: "from-cyan-500 to-cyan-600" },
+    { label: "Marketing", icon: Megaphone, desc: "Social media, SEO, campaigns", color: "from-red-500 to-red-600" },
+    { label: "Translation", icon: Languages, desc: "Documents, websites, localization", color: "from-indigo-500 to-indigo-600" },
   ];
 
   const stats = [
-    { value: "50K+", label: "Tasks Completed" },
-    { value: "120+", label: "Countries" },
-    { value: "4.9", label: "Average Rating" },
-    { value: "$2M+", label: "Paid to Workers" },
+    { value: "50K+", label: "Tasks Completed", icon: CheckCircle2 },
+    { value: "120+", label: "Countries", icon: Globe },
+    { value: "4.9", label: "Average Rating", icon: Star },
+    { value: "$2M+", label: "Paid to Workers", icon: TrendingUp },
+  ];
+
+  const features = [
+    { icon: Zap, title: "Post Tasks in Minutes", desc: "Describe what you need, set your budget, and get matched with skilled workers instantly.", color: "bg-primary/10 text-primary" },
+    { icon: Lock, title: "Secure Escrow Payments", desc: "Your money is held safely until the task is completed to your satisfaction. Zero risk.", color: "bg-secondary/10 text-secondary" },
+    { icon: Globe, title: "Local & Remote Services", desc: "From furniture moving in Lagos to graphic design from anywhere — we cover it all.", color: "bg-accent/10 text-accent" },
+    { icon: Shield, title: "Trusted & Verified", desc: "Every worker goes through verification. Ratings, reviews, and reputation scores you can trust.", color: "bg-chart-4/10 text-chart-4" },
+  ];
+
+  const workers = [
+    { src: "/images/worker-freelancer.jpg", name: "Priya", role: "Software Developer", location: "Mumbai, India", rating: "4.9", tasks: "127" },
+    { src: "/images/worker-handyman.jpg", name: "Carlos", role: "Home Repairs Pro", location: "Mexico City", rating: "5.0", tasks: "89" },
+    { src: "/images/worker-delivery.jpg", name: "Kelechi", role: "Courier & Logistics", location: "Lagos, Nigeria", rating: "4.8", tasks: "234" },
+    { src: "/images/worker-designer.jpg", name: "Amara", role: "Graphic Designer", location: "Accra, Ghana", rating: "5.0", tasks: "156" },
   ];
 
   const testimonials = [
@@ -85,7 +100,7 @@ export default function Home() {
       name: "Maria Rodriguez",
       role: "Freelance Designer, Mexico",
       avatar: "https://i.pravatar.cc/150?img=32",
-      content: "HelpChain connected me with clients globally. The escrow system means I always get paid for my work. It's changed how I freelance.",
+      content: "HelpChain connected me with clients globally. The escrow system means I always get paid for my work. It's completely changed my freelance career.",
       rating: 5,
     },
     {
@@ -99,7 +114,7 @@ export default function Home() {
       name: "Priya Sharma",
       role: "Software Engineer, India",
       avatar: "https://i.pravatar.cc/150?img=26",
-      content: "As a part-time freelancer, HelpChain's global task marketplace lets me pick up projects that match my skills perfectly. Love the platform!",
+      content: "As a part-time freelancer, HelpChain lets me pick up projects that match my skills perfectly. The global marketplace is a game changer!",
       rating: 5,
     },
   ];
@@ -108,103 +123,170 @@ export default function Home() {
     <div className="min-h-screen flex flex-col bg-background font-sans">
       <Navbar />
 
-      {/* Hero */}
-      <section className="relative min-h-[90vh] flex items-center overflow-hidden -mt-16">
+      {/* ═══════════ HERO ═══════════ */}
+      <section className="relative min-h-[95vh] flex items-center overflow-hidden -mt-16">
+        {/* Background image */}
         <div className="absolute inset-0">
           <img src="/images/hero-workers.jpg" alt="Diverse professionals collaborating" className="w-full h-full object-cover" />
-          <div className="absolute inset-0 bg-gradient-to-br from-primary/85 via-primary/75 to-accent/65" />
+          <div className="absolute inset-0 bg-gradient-to-br from-[hsl(222,80%,20%)]/90 via-[hsl(222,80%,30%)]/85 to-[hsl(270,60%,35%)]/80" />
+          {/* Decorative orbs */}
+          <div className="absolute top-1/4 left-10 w-72 h-72 bg-accent/20 rounded-full blur-[100px] animate-pulse-slow" />
+          <div className="absolute bottom-1/4 right-10 w-96 h-96 bg-secondary/20 rounded-full blur-[120px] animate-pulse-slow" />
         </div>
 
-        <div className="container mx-auto px-4 md:px-8 relative z-10 pt-32 md:pt-40 pb-16">
-          <div className="max-w-3xl mx-auto text-center">
-            <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8 }}>
-              <Badge className="mb-6 px-4 py-1.5 bg-white/20 text-white border-white/30 rounded-full text-sm">
-                <Globe className="w-4 h-4 mr-2" />
+        <div className="container mx-auto px-4 md:px-8 relative z-10 pt-32 md:pt-40 pb-20">
+          <div className="max-w-4xl mx-auto text-center">
+            <motion.div initial={{ opacity: 0, y: 40 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.9 }}>
+              <Badge className="mb-8 px-5 py-2 bg-white/10 text-white border-white/20 rounded-full text-sm backdrop-blur-sm">
+                <Sparkles className="w-4 h-4 mr-2 text-accent" />
                 Trusted by users in 120+ countries
               </Badge>
 
-              <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-white leading-tight mb-6">
-                Hire help or earn money
+              <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold text-white leading-[1.05] mb-8 font-heading">
+                Get Help With Anything.
                 <br />
-                doing{" "}
-                <span className="text-white/90 underline decoration-white/30 decoration-wavy underline-offset-8">
-                  {typingText}
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-accent via-green-300 to-accent">
+                  Anytime. Anywhere.
                 </span>
-                <span className="animate-pulse font-light">|</span>
               </h1>
 
-              <p className="text-lg md:text-xl text-white/80 mb-10 max-w-2xl mx-auto font-light">
-                The global task marketplace where anyone can post tasks or complete them.
-                Secure escrow payments, fast matching, and trusted reputation systems.
+              <p className="text-lg md:text-xl text-white/70 mb-12 max-w-2xl mx-auto leading-relaxed">
+                Post tasks, hire trusted helpers, and get things done — from{" "}
+                <span className="text-white font-medium">
+                  {typingText}
+                  <span className="animate-pulse">|</span>
+                </span>
               </p>
 
-              <div className="flex flex-col sm:flex-row gap-3 justify-center mb-8 max-w-xl mx-auto">
+              {/* Search Bar */}
+              <div className="flex flex-col sm:flex-row gap-3 justify-center mb-10 max-w-2xl mx-auto">
                 <div className="relative flex-1">
+                  <Search className="absolute left-5 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
                   <Input
                     value={searchInput}
                     onChange={(e) => setSearchInput(e.target.value)}
                     onKeyDown={(e) => e.key === "Enter" && handleSearch()}
                     placeholder="What do you need done?"
-                    className="pl-5 pr-14 h-14 text-base rounded-xl bg-white border-0 shadow-lg focus:ring-2 focus:ring-white/30"
+                    className="pl-14 pr-5 h-16 text-lg rounded-2xl bg-white border-0 shadow-2xl focus:ring-4 focus:ring-accent/30"
                   />
-                  <Button
-                    size="icon"
-                    onClick={handleSearch}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 h-10 w-10 rounded-lg bg-primary hover:bg-primary/90 text-primary-foreground"
-                  >
-                    <Search className="h-4 w-4" />
-                  </Button>
                 </div>
+                <Button
+                  onClick={handleSearch}
+                  size="lg"
+                  className="h-16 px-10 rounded-2xl bg-accent hover:bg-accent/90 text-accent-foreground shadow-2xl shadow-accent/30 text-lg font-semibold"
+                >
+                  Search <ArrowRight className="ml-2 h-5 w-5" />
+                </Button>
               </div>
 
-              <div className="flex flex-wrap gap-2 justify-center">
-                {["Design", "Programming", "Writing", "Marketing", "Translation"].map((tag) => (
+              {/* Quick Tags */}
+              <div className="flex flex-wrap gap-2 justify-center mb-10">
+                {["Cleaning", "Design", "Delivery", "Repairs", "Writing", "Tutoring"].map((tag) => (
                   <Badge
                     key={tag}
                     variant="secondary"
-                    className="rounded-full px-4 py-2 bg-white/15 text-white border border-white/20 hover:bg-white/25 cursor-pointer transition-colors font-normal"
+                    className="rounded-full px-5 py-2.5 bg-white/10 text-white border border-white/15 hover:bg-white/20 cursor-pointer transition-all backdrop-blur-sm font-normal text-sm"
                     onClick={() => {
                       setSearchInput(tag);
                       setLocation(`/discover?query=${encodeURIComponent(tag)}`);
                     }}
                   >
-                    {tag} <ArrowRight className="w-3 h-3 ml-1.5 inline" />
+                    {tag}
                   </Badge>
                 ))}
+              </div>
+
+              {/* Hero CTAs */}
+              <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                <Link href="/create-request">
+                  <Button size="lg" className="rounded-full px-10 py-7 text-lg bg-white text-primary hover:bg-white/95 shadow-2xl font-semibold btn-shine">
+                    Post a Task <ArrowRight className="ml-2 h-5 w-5" />
+                  </Button>
+                </Link>
+                <Link href="/discover">
+                  <Button size="lg" variant="outline" className="rounded-full px-10 py-7 text-lg border-2 border-white/30 text-white hover:bg-white/10 font-semibold">
+                    Browse Tasks
+                  </Button>
+                </Link>
               </div>
             </motion.div>
           </div>
         </div>
+
+        {/* Bottom wave */}
+        <div className="absolute bottom-0 left-0 right-0">
+          <svg viewBox="0 0 1440 80" fill="none" className="w-full">
+            <path d="M0 80L60 68C120 56 240 32 360 24C480 16 600 24 720 32C840 40 960 48 1080 44C1200 40 1320 24 1380 16L1440 8V80H0Z" fill="hsl(var(--background))" />
+          </svg>
+        </div>
       </section>
 
-      {/* Stats */}
-      <section className="py-10 bg-card border-y border-border">
+      {/* ═══════════ STATS ═══════════ */}
+      <section className="py-16 bg-background relative z-10 -mt-4">
         <div className="container mx-auto px-4">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
             {stats.map((stat, i) => (
               <motion.div
                 key={i}
-                className="text-center"
-                initial={{ opacity: 0, y: 20 }}
+                className="text-center p-6 rounded-2xl bg-card border border-border shadow-sm hover:shadow-lg transition-shadow"
+                initial={{ opacity: 0, y: 30 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: i * 0.1 }}
               >
+                <stat.icon className="w-8 h-8 text-primary mx-auto mb-3" />
                 <p className="text-3xl md:text-4xl font-bold text-foreground mb-1">{stat.value}</p>
-                <p className="text-sm text-muted-foreground">{stat.label}</p>
+                <p className="text-sm text-muted-foreground font-medium">{stat.label}</p>
               </motion.div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* Categories */}
-      <section className="py-20 bg-background">
+      {/* ═══════════ FEATURES ═══════════ */}
+      <section className="py-24 bg-background">
+        <div className="container mx-auto px-4">
+          <motion.div className="text-center max-w-2xl mx-auto mb-20" initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
+            <Badge className="mb-5 px-4 py-1.5 bg-primary/10 text-primary border-primary/20 rounded-full">
+              Why HelpChain
+            </Badge>
+            <h2 className="text-4xl md:text-5xl font-bold mb-5 text-foreground font-heading">
+              Everything you need to
+              <br />
+              <span className="text-gradient">get things done</span>
+            </h2>
+            <p className="text-lg text-muted-foreground">
+              A powerful platform built for both clients and workers, with security and trust at its core.
+            </p>
+          </motion.div>
+
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {features.map((feat, i) => (
+              <motion.div key={i} initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.1 }}>
+                <Card className="h-full border-border hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group rounded-2xl">
+                  <CardContent className="p-8">
+                    <div className={`h-14 w-14 rounded-2xl ${feat.color} flex items-center justify-center mb-6 group-hover:scale-110 transition-transform`}>
+                      <feat.icon className="h-7 w-7" />
+                    </div>
+                    <h3 className="font-bold text-lg text-foreground mb-3">{feat.title}</h3>
+                    <p className="text-muted-foreground leading-relaxed">{feat.desc}</p>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ═══════════ CATEGORIES ═══════════ */}
+      <section className="py-24 bg-muted/30 border-y border-border">
         <div className="container mx-auto px-4">
           <motion.div className="text-center max-w-2xl mx-auto mb-16" initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
-            <h2 className="text-3xl md:text-4xl font-bold mb-4 text-foreground">Explore task categories</h2>
+            <h2 className="text-4xl md:text-5xl font-bold mb-5 text-foreground font-heading">
+              Explore task categories
+            </h2>
             <p className="text-lg text-muted-foreground">
-              From digital work to local services — find or post any type of task.
+              From local errands to remote digital work — find or post any type of task.
             </p>
           </motion.div>
 
@@ -212,12 +294,12 @@ export default function Home() {
             {categories.map((cat, i) => (
               <motion.div key={i} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.05 }}>
                 <Link href="/discover">
-                  <Card className="group cursor-pointer hover:shadow-xl hover:border-primary/30 transition-all duration-300 h-full">
+                  <Card className="group cursor-pointer hover:shadow-xl hover:-translate-y-1 transition-all duration-300 h-full rounded-2xl border-border overflow-hidden">
                     <CardContent className="p-6">
-                      <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center mb-4 group-hover:bg-primary/20 transition-colors">
-                        <cat.icon className="h-6 w-6 text-primary" />
+                      <div className={`h-12 w-12 rounded-xl bg-gradient-to-br ${cat.color} flex items-center justify-center mb-4 text-white shadow-lg group-hover:scale-110 transition-transform`}>
+                        <cat.icon className="h-6 w-6" />
                       </div>
-                      <h3 className="font-semibold text-foreground mb-1">{cat.label}</h3>
+                      <h3 className="font-bold text-foreground mb-1">{cat.label}</h3>
                       <p className="text-sm text-muted-foreground">{cat.desc}</p>
                     </CardContent>
                   </Card>
@@ -226,9 +308,9 @@ export default function Home() {
             ))}
           </div>
 
-          <div className="text-center mt-10">
+          <div className="text-center mt-12">
             <Link href="/discover">
-              <Button variant="outline" size="lg" className="rounded-full px-8 group">
+              <Button variant="outline" size="lg" className="rounded-full px-10 group text-base">
                 View All Categories
                 <ChevronRight className="ml-2 w-4 h-4 group-hover:translate-x-1 transition-transform" />
               </Button>
@@ -237,58 +319,57 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Featured Workers Showcase */}
-      <section className="py-20 bg-card border-y border-border">
+      {/* ═══════════ WORKERS SHOWCASE ═══════════ */}
+      <section className="py-24 bg-background">
         <div className="container mx-auto px-4">
           <motion.div className="text-center max-w-2xl mx-auto mb-16" initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
-            <Badge className="mb-4 px-4 py-1.5 bg-chart-2/10 text-chart-2 border-chart-2/20 rounded-full">
+            <Badge className="mb-5 px-4 py-1.5 bg-secondary/10 text-secondary border-secondary/20 rounded-full">
               <Users className="w-4 h-4 mr-2" />
               Workers Worldwide
             </Badge>
-            <h2 className="text-3xl md:text-4xl font-bold mb-4 text-foreground">Real people, real skills</h2>
+            <h2 className="text-4xl md:text-5xl font-bold mb-5 text-foreground font-heading">Real people, real skills</h2>
             <p className="text-lg text-muted-foreground">
-              From freelance designers to delivery pros — our workers come from every corner of the globe.
+              From freelance designers to delivery pros — skilled workers from every corner of the globe.
             </p>
           </motion.div>
 
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {[
-              { src: "/images/worker-freelancer.jpg", name: "Sofia", role: "Freelance Developer", location: "Mexico City" },
-              { src: "/images/worker-handyman.jpg", name: "Raj", role: "Home Services Pro", location: "Mumbai" },
-              { src: "/images/worker-delivery.jpg", name: "Kelechi", role: "Courier & Logistics", location: "Lagos" },
-              { src: "/images/worker-designer.jpg", name: "Yuki", role: "Graphic Designer", location: "Tokyo" },
-            ].map((worker, i) => (
-              <motion.div key={i} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.1 }}>
-                <Card className="group overflow-hidden border-border hover:shadow-xl transition-all duration-300">
-                  <div className="aspect-square overflow-hidden">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-5">
+            {workers.map((worker, i) => (
+              <motion.div key={i} initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.1 }}>
+                <Card className="group overflow-hidden border-border hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 rounded-2xl">
+                  <div className="aspect-[4/5] overflow-hidden relative">
                     <img
                       src={worker.src}
                       alt={`${worker.name} - ${worker.role}`}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
                       loading="lazy"
                     />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
+                    <div className="absolute bottom-4 left-4 right-4">
+                      <h4 className="font-bold text-white text-lg">{worker.name}</h4>
+                      <p className="text-white/80 text-sm font-medium">{worker.role}</p>
+                    </div>
                   </div>
                   <CardContent className="p-4">
-                    <h4 className="font-semibold text-foreground">{worker.name}</h4>
-                    <p className="text-sm text-primary font-medium">{worker.role}</p>
-                    <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
-                      <MapPin className="w-3 h-3" /> {worker.location}
-                    </p>
-                    <div className="flex items-center gap-1 mt-2">
-                      {[...Array(5)].map((_, j) => (
-                        <Star key={j} className="w-3.5 h-3.5 fill-chart-4 text-chart-4" />
-                      ))}
-                      <span className="text-xs text-muted-foreground ml-1">5.0</span>
+                    <div className="flex items-center justify-between">
+                      <p className="text-xs text-muted-foreground flex items-center gap-1">
+                        <MapPin className="w-3 h-3" /> {worker.location}
+                      </p>
+                      <div className="flex items-center gap-1">
+                        <Star className="w-3.5 h-3.5 fill-chart-4 text-chart-4" />
+                        <span className="text-xs font-semibold text-foreground">{worker.rating}</span>
+                      </div>
                     </div>
+                    <p className="text-xs text-muted-foreground mt-1">{worker.tasks} tasks completed</p>
                   </CardContent>
                 </Card>
               </motion.div>
             ))}
           </div>
 
-          <div className="text-center mt-10">
+          <div className="text-center mt-12">
             <Link href="/discover">
-              <Button size="lg" className="rounded-full px-8 bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg">
+              <Button size="lg" className="rounded-full px-10 bg-primary hover:bg-primary/90 text-primary-foreground shadow-xl shadow-primary/20 text-base">
                 Browse All Tasks <ArrowRight className="ml-2 h-5 w-5" />
               </Button>
             </Link>
@@ -296,67 +377,120 @@ export default function Home() {
         </div>
       </section>
 
-      {/* How it Works */}
-      <section className="py-20 bg-muted/50">
+      {/* ═══════════ HOW IT WORKS ═══════════ */}
+      <section className="py-24 bg-muted/30 border-y border-border">
+        <div className="container mx-auto px-4">
+          <motion.div className="text-center max-w-2xl mx-auto mb-20" initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
+            <Badge className="mb-5 px-4 py-1.5 bg-accent/10 text-accent border-accent/20 rounded-full">
+              How It Works
+            </Badge>
+            <h2 className="text-4xl md:text-5xl font-bold mb-5 text-foreground font-heading">
+              Three simple steps
+            </h2>
+            <p className="text-lg text-muted-foreground">
+              Getting help has never been easier. Post, match, and pay securely.
+            </p>
+          </motion.div>
+
+          <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+            {[
+              { step: "01", title: "Post your task", desc: "Describe what you need, set your budget and deadline. It takes just 2 minutes.", icon: FileText, color: "from-primary to-primary/80" },
+              { step: "02", title: "Get matched", desc: "Receive proposals from verified workers worldwide. Compare skills, ratings, and prices.", icon: Users, color: "from-secondary to-secondary/80" },
+              { step: "03", title: "Pay securely", desc: "Funds are held in escrow until the task is completed to your satisfaction.", icon: Shield, color: "from-accent to-accent/80" },
+            ].map((item, i) => (
+              <motion.div key={i} initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.15 }}>
+                <div className="text-center relative">
+                  {i < 2 && (
+                    <div className="hidden md:block absolute top-16 left-[60%] w-[80%] border-t-2 border-dashed border-border" />
+                  )}
+                  <div className={`w-20 h-20 rounded-3xl bg-gradient-to-br ${item.color} flex items-center justify-center mx-auto mb-6 text-white shadow-xl relative z-10`}>
+                    <item.icon className="w-9 h-9" />
+                  </div>
+                  <span className="text-sm font-bold text-primary mb-2 block">Step {item.step}</span>
+                  <h3 className="font-bold text-xl mb-3 text-foreground">{item.title}</h3>
+                  <p className="text-muted-foreground leading-relaxed max-w-xs mx-auto">{item.desc}</p>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+
+          <div className="text-center mt-16">
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <Link href="/create-request">
+                <Button size="lg" className="rounded-full px-10 bg-primary hover:bg-primary/90 text-primary-foreground shadow-xl shadow-primary/20 text-base font-semibold">
+                  Post a Task <ArrowRight className="ml-2 h-5 w-5" />
+                </Button>
+              </Link>
+              <Link href="/discover">
+                <Button size="lg" variant="outline" className="rounded-full px-10 text-base">
+                  Find Tasks
+                </Button>
+              </Link>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ═══════════ APP PREVIEW / SHOWCASE ═══════════ */}
+      <section className="py-24 bg-background overflow-hidden">
         <div className="container mx-auto px-4">
           <div className="grid lg:grid-cols-2 gap-16 items-center">
-            <motion.div initial={{ opacity: 0, x: -30 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }}>
-              <Badge className="mb-4 px-4 py-1.5 bg-primary/10 text-primary border-primary/20 rounded-full">
-                How It Works
+            <motion.div initial={{ opacity: 0, x: -40 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }}>
+              <Badge className="mb-5 px-4 py-1.5 bg-secondary/10 text-secondary border-secondary/20 rounded-full">
+                Platform Preview
               </Badge>
-              <h2 className="text-3xl md:text-4xl font-bold mb-6 text-foreground">Get things done in 3 simple steps</h2>
+              <h2 className="text-4xl md:text-5xl font-bold mb-6 text-foreground font-heading leading-tight">
+                A beautiful interface
+                <br />
+                <span className="text-gradient">built for everyone</span>
+              </h2>
+              <p className="text-lg text-muted-foreground mb-8 leading-relaxed">
+                Whether you're posting tasks or completing them, every interaction is designed to be fast, intuitive, and secure.
+              </p>
 
-              <div className="space-y-8">
+              <div className="space-y-5">
                 {[
-                  { step: "1", title: "Post your task", desc: "Describe what you need, set your budget and deadline. It takes just 2 minutes." },
-                  { step: "2", title: "Get offers from workers", desc: "Receive proposals from verified workers worldwide. Compare skills, ratings, and prices." },
-                  { step: "3", title: "Pay securely via escrow", desc: "Funds are held safely until the task is completed to your satisfaction. Release with one click." },
+                  { icon: Eye, title: "Task Feed", desc: "Browse beautifully organized tasks with smart filters" },
+                  { icon: Lock, title: "Escrow Protection", desc: "Every payment is protected until work is verified" },
+                  { icon: MessageCircle, title: "Real-time Chat", desc: "Coordinate seamlessly with text, files, and images" },
+                  { icon: Star, title: "Reputation System", desc: "Build trust through ratings and verified reviews" },
                 ].map((item, i) => (
-                  <motion.div key={i} className="flex gap-5" initial={{ opacity: 0, x: -20 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.15 }}>
-                    <div className="w-12 h-12 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-bold text-lg shrink-0 shadow-lg">
-                      {item.step}
+                  <motion.div key={i} className="flex gap-4 items-start" initial={{ opacity: 0, x: -20 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.1 }}>
+                    <div className="h-11 w-11 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+                      <item.icon className="h-5 w-5 text-primary" />
                     </div>
                     <div>
-                      <h3 className="font-semibold text-lg mb-1 text-foreground">{item.title}</h3>
-                      <p className="text-muted-foreground">{item.desc}</p>
+                      <h4 className="font-semibold text-foreground mb-0.5">{item.title}</h4>
+                      <p className="text-sm text-muted-foreground">{item.desc}</p>
                     </div>
                   </motion.div>
                 ))}
               </div>
-
-              <div className="mt-10 flex gap-3">
-                <Link href="/create-request">
-                  <Button size="lg" className="rounded-full px-8 bg-primary hover:bg-primary/90 text-primary-foreground shadow-xl">
-                    Post a Task <ArrowRight className="ml-2 h-5 w-5" />
-                  </Button>
-                </Link>
-                <Link href="/discover">
-                  <Button size="lg" variant="outline" className="rounded-full px-8">
-                    Find Tasks
-                  </Button>
-                </Link>
-              </div>
             </motion.div>
 
-            <motion.div className="grid grid-cols-2 gap-4" initial={{ opacity: 0, x: 30 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }}>
+            <motion.div className="grid grid-cols-2 gap-4" initial={{ opacity: 0, x: 40 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }}>
               <div className="space-y-4">
-                <div className="rounded-2xl overflow-hidden shadow-lg">
-                  <img src="/images/worker-tutor.jpg" alt="Tutor helping a student" className="w-full h-48 object-cover" loading="lazy" />
+                <div className="rounded-2xl overflow-hidden shadow-2xl">
+                  <img src="/images/worker-tutor.jpg" alt="Tutor helping a student" className="w-full h-52 object-cover" loading="lazy" />
                 </div>
-                <Card className="p-6 border-border hover:shadow-lg transition-shadow">
-                  <Shield className="w-10 h-10 text-primary mb-4" />
-                  <h4 className="font-semibold mb-2 text-foreground">Escrow Protection</h4>
+                <Card className="p-6 border-border shadow-lg rounded-2xl hover-lift">
+                  <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center mb-4 text-white">
+                    <Shield className="w-6 h-6" />
+                  </div>
+                  <h4 className="font-bold mb-2 text-foreground">Escrow Protection</h4>
                   <p className="text-sm text-muted-foreground">Payments held securely until task completion</p>
                 </Card>
               </div>
               <div className="space-y-4 pt-8">
-                <Card className="p-6 border-border hover:shadow-lg transition-shadow">
-                  <CheckCircle2 className="w-10 h-10 text-chart-2 mb-4" />
-                  <h4 className="font-semibold mb-2 text-foreground">Verified Workers</h4>
+                <Card className="p-6 border-border shadow-lg rounded-2xl hover-lift">
+                  <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-accent to-accent/80 flex items-center justify-center mb-4 text-white">
+                    <CheckCircle2 className="w-6 h-6" />
+                  </div>
+                  <h4 className="font-bold mb-2 text-foreground">Verified Workers</h4>
                   <p className="text-sm text-muted-foreground">Identity verification and reputation scores</p>
                 </Card>
-                <div className="rounded-2xl overflow-hidden shadow-lg">
-                  <img src="/images/worker-delivery.jpg" alt="Delivery worker with package" className="w-full h-48 object-cover" loading="lazy" />
+                <div className="rounded-2xl overflow-hidden shadow-2xl">
+                  <img src="/images/worker-delivery.jpg" alt="Delivery worker" className="w-full h-52 object-cover" loading="lazy" />
                 </div>
               </div>
             </motion.div>
@@ -364,13 +498,13 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Testimonials */}
-      <section className="py-24 bg-muted/30 relative overflow-hidden">
+      {/* ═══════════ TESTIMONIALS ═══════════ */}
+      <section className="py-24 bg-muted/30 relative overflow-hidden border-y border-border">
         <div className="absolute top-0 left-0 w-72 h-72 bg-primary/5 rounded-full -translate-x-1/2 -translate-y-1/2" />
-        <div className="absolute bottom-0 right-0 w-96 h-96 bg-accent/5 rounded-full translate-x-1/3 translate-y-1/3" />
+        <div className="absolute bottom-0 right-0 w-96 h-96 bg-secondary/5 rounded-full translate-x-1/3 translate-y-1/3" />
         <div className="container mx-auto px-4 relative z-10">
           <motion.div className="text-center max-w-2xl mx-auto mb-16" initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
-            <h2 className="text-3xl md:text-5xl font-bold mb-4 text-foreground">
+            <h2 className="text-4xl md:text-5xl font-bold mb-5 text-foreground font-heading">
               What people are saying
             </h2>
             <p className="text-lg text-muted-foreground max-w-lg mx-auto">
@@ -388,7 +522,7 @@ export default function Home() {
                         <Star key={j} className="w-5 h-5 fill-chart-4 text-chart-4" />
                       ))}
                     </div>
-                    <p className="text-foreground mb-8 leading-relaxed text-[15px] flex-1">
+                    <p className="text-foreground mb-8 leading-relaxed flex-1">
                       "{t.content}"
                     </p>
                     <div className="flex items-center gap-4 pt-6 border-t border-border">
@@ -409,29 +543,31 @@ export default function Home() {
         </div>
       </section>
 
-      {/* CTA */}
-      <section className="relative py-28 overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-primary via-primary to-primary/80" />
-        <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(circle at 20% 50%, white 1px, transparent 1px), radial-gradient(circle at 80% 20%, white 1px, transparent 1px)', backgroundSize: '60px 60px' }} />
+      {/* ═══════════ CTA ═══════════ */}
+      <section className="relative py-32 overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-br from-[hsl(222,80%,25%)] via-[hsl(250,60%,35%)] to-[hsl(270,60%,30%)]" />
+        <div className="absolute inset-0 opacity-[0.07]" style={{ backgroundImage: 'radial-gradient(circle at 25% 25%, white 1px, transparent 1px), radial-gradient(circle at 75% 75%, white 1px, transparent 1px)', backgroundSize: '50px 50px' }} />
+        <div className="absolute top-1/3 left-1/4 w-80 h-80 bg-accent/15 rounded-full blur-[100px]" />
+        <div className="absolute bottom-1/4 right-1/4 w-64 h-64 bg-secondary/20 rounded-full blur-[80px]" />
         <div className="container mx-auto px-4 text-center relative z-10">
           <motion.div initial={{ opacity: 0, scale: 0.95 }} whileInView={{ opacity: 1, scale: 1 }} viewport={{ once: true }} transition={{ duration: 0.6 }}>
-            <Sparkles className="w-10 h-10 text-primary-foreground/60 mx-auto mb-6" />
-            <h2 className="text-4xl md:text-5xl font-bold text-primary-foreground mb-5 leading-tight">
+            <Sparkles className="w-12 h-12 text-accent mx-auto mb-8" />
+            <h2 className="text-4xl md:text-6xl font-bold text-white mb-6 leading-tight font-heading">
               Start getting things done
               <br />
-              <span className="text-primary-foreground/80">today</span>
+              <span className="text-white/70">today</span>
             </h2>
-            <p className="text-lg text-primary-foreground/70 mb-10 max-w-lg mx-auto leading-relaxed">
+            <p className="text-lg text-white/60 mb-12 max-w-lg mx-auto leading-relaxed">
               Join a growing community of people hiring help and earning money — from anywhere in the world.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link href="/create-request">
-                <Button size="lg" className="rounded-full px-10 py-6 text-base bg-white text-primary hover:bg-white/90 shadow-2xl font-semibold">
+                <Button size="lg" className="rounded-full px-12 py-7 text-lg bg-accent hover:bg-accent/90 text-accent-foreground shadow-2xl shadow-accent/30 font-semibold">
                   Post a Task <ArrowRight className="ml-2 h-5 w-5" />
                 </Button>
               </Link>
               <Link href="/discover">
-                <Button size="lg" variant="outline" className="rounded-full px-10 py-6 text-base border-2 border-primary-foreground/30 text-primary-foreground hover:bg-primary-foreground/10 font-semibold">
+                <Button size="lg" variant="outline" className="rounded-full px-12 py-7 text-lg border-2 border-white/25 text-white hover:bg-white/10 font-semibold">
                   Browse Tasks
                 </Button>
               </Link>
@@ -440,11 +576,11 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Educational Footer Section */}
-      <section className="py-16 bg-muted/30 border-t border-border">
+      {/* ═══════════ EDUCATIONAL FOOTER ═══════════ */}
+      <section className="py-20 bg-background border-t border-border">
         <div className="container mx-auto px-4">
-          <div className="text-center mb-12">
-            <h3 className="text-2xl font-bold text-foreground mb-2">Learn more about HelpChain</h3>
+          <div className="text-center mb-14">
+            <h3 className="text-2xl md:text-3xl font-bold text-foreground mb-3 font-heading">Learn more about HelpChain</h3>
             <p className="text-muted-foreground">Guides to help you get the most out of the platform</p>
           </div>
           <div className="grid md:grid-cols-3 lg:grid-cols-5 gap-4">
@@ -453,13 +589,13 @@ export default function Home() {
               { title: "What Is Escrow", icon: Shield, desc: "How your money stays protected" },
               { title: "Withdrawing Earnings", icon: ArrowRight, desc: "Bank and crypto withdrawal options" },
               { title: "Trust & Safety", icon: CheckCircle2, desc: "Verification, ratings, and dispute resolution" },
-              { title: "Blockchain Security", icon: Globe, desc: "How blockchain protects your transactions" },
+              { title: "Blockchain Security", icon: Lock, desc: "How blockchain protects your transactions" },
             ].map((guide, i) => (
               <Link key={i} href="/help">
-                <Card className="group cursor-pointer hover:shadow-md hover:border-primary/30 transition-all h-full">
-                  <CardContent className="p-5">
-                    <guide.icon className="w-8 h-8 text-primary mb-3" />
-                    <h4 className="font-semibold text-sm text-foreground mb-1">{guide.title}</h4>
+                <Card className="group cursor-pointer hover:shadow-lg hover:-translate-y-1 hover:border-primary/30 transition-all duration-300 h-full rounded-2xl">
+                  <CardContent className="p-6">
+                    <guide.icon className="w-8 h-8 text-primary mb-4" />
+                    <h4 className="font-bold text-sm text-foreground mb-1">{guide.title}</h4>
                     <p className="text-xs text-muted-foreground">{guide.desc}</p>
                   </CardContent>
                 </Card>
