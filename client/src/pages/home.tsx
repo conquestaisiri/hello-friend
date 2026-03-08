@@ -555,7 +555,7 @@ export default function Home() {
         <div className="container mx-auto px-4 text-center relative z-10">
           <motion.div initial={{ opacity: 0, scale: 0.95 }} whileInView={{ opacity: 1, scale: 1 }} viewport={{ once: true }} transition={{ duration: 0.6 }}>
             <Sparkles className="w-12 h-12 text-primary mx-auto mb-8" />
-            <h2 className="text-4xl md:text-6xl font-bold text-white mb-6 leading-tight font-heading">
+            <h2 className="text-3xl md:text-4xl lg:text-6xl font-bold text-white mb-6 leading-tight font-heading">
               Start getting things done
               <br />
               <span className="text-white/70">today</span>
