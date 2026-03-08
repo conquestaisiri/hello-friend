@@ -127,8 +127,8 @@ export default function Home() {
       <section className="relative min-h-[95vh] flex items-center overflow-hidden -mt-16">
         {/* Background image */}
         <div className="absolute inset-0">
-          <img src="/images/hero-workers.jpg" alt="Diverse professionals collaborating" className="w-full h-full object-cover" />
-          <div className="absolute inset-0 bg-gradient-to-br from-[hsl(222,80%,20%)]/90 via-[hsl(222,80%,30%)]/85 to-[hsl(270,60%,35%)]/80" />
+          <img src="/images/hero-background.png" alt="Diverse professionals collaborating" className="w-full h-full object-cover" />
+          <div className="absolute inset-0 bg-gradient-to-b from-black/75 via-black/60 to-black/80" />
           {/* Decorative orbs */}
           <div className="absolute top-1/4 left-10 w-72 h-72 bg-accent/20 rounded-full blur-[100px] animate-pulse-slow" />
           <div className="absolute bottom-1/4 right-10 w-96 h-96 bg-secondary/20 rounded-full blur-[120px] animate-pulse-slow" />
@@ -545,13 +545,13 @@ export default function Home() {
 
       {/* ═══════════ CTA ═══════════ */}
       <section className="relative py-32 overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-[hsl(222,80%,25%)] via-[hsl(250,60%,35%)] to-[hsl(270,60%,30%)]" />
+        <div className="absolute inset-0 bg-gradient-to-br from-[hsl(222,80%,18%)] via-[hsl(222,70%,12%)] to-[hsl(222,60%,8%)]" />
         <div className="absolute inset-0 opacity-[0.07]" style={{ backgroundImage: 'radial-gradient(circle at 25% 25%, white 1px, transparent 1px), radial-gradient(circle at 75% 75%, white 1px, transparent 1px)', backgroundSize: '50px 50px' }} />
         <div className="absolute top-1/3 left-1/4 w-80 h-80 bg-accent/15 rounded-full blur-[100px]" />
         <div className="absolute bottom-1/4 right-1/4 w-64 h-64 bg-secondary/20 rounded-full blur-[80px]" />
         <div className="container mx-auto px-4 text-center relative z-10">
           <motion.div initial={{ opacity: 0, scale: 0.95 }} whileInView={{ opacity: 1, scale: 1 }} viewport={{ once: true }} transition={{ duration: 0.6 }}>
-            <Sparkles className="w-12 h-12 text-accent mx-auto mb-8" />
+            <Sparkles className="w-12 h-12 text-primary mx-auto mb-8" />
             <h2 className="text-4xl md:text-6xl font-bold text-white mb-6 leading-tight font-heading">
               Start getting things done
               <br />
@@ -562,7 +562,7 @@ export default function Home() {
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link href="/create-request">
-                <Button size="lg" className="rounded-full px-12 py-7 text-lg bg-accent hover:bg-accent/90 text-accent-foreground shadow-2xl shadow-accent/30 font-semibold">
+                <Button size="lg" className="rounded-full px-12 py-7 text-lg bg-primary hover:bg-primary/90 text-primary-foreground shadow-2xl shadow-primary/30 font-semibold">
                   Post a Task <ArrowRight className="ml-2 h-5 w-5" />
                 </Button>
               </Link>
