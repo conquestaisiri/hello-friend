@@ -8,7 +8,7 @@ import {
   Search, ArrowRight, Shield, Clock, Star, CheckCircle2,
   Sparkles, Users, ChevronRight, Globe, Briefcase, Code,
   Palette, BookOpen, Megaphone, Languages, MessageCircle,
-  Home as HomeIcon, Wrench, GraduationCap, FileText, HelpCircle
+  Home as HomeIcon, Wrench, GraduationCap, FileText, HelpCircle, MapPin
 } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { motion } from "framer-motion";
