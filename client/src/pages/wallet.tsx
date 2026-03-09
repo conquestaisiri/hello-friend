@@ -65,6 +65,7 @@ function WalletPageContent() {
   const { user, getIdToken } = useFirebaseAuth();
   const { formatLocal, currency } = useLocalizationStore();
   const { toast } = useToast();
+  const { usdcNgn, solNgn, solUsd, lastUpdated, isLoading: pricesLoading, refresh: refreshPrices } = useCryptoPrices();
 
   const [showAssets, setShowAssets] = useState(false);
   const [filter, setFilter] = useState("all");
