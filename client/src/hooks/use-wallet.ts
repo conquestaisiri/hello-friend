@@ -150,6 +150,11 @@ export function useWallet() {
     return withdrawMutation.mutateAsync({ amount, bankAccountId, walletAddress });
   };
 
+  const isWithdrawalLocked = () => {
+    const escrow = walletData?.wallet?.escrowBalance || 0;
+    return escrow > 0;
+  };
+
   return {
     balance: walletData?.wallet?.availableBalance || 0,
     availableBalance: walletData?.wallet?.availableBalance || 0,
@@ -160,6 +165,7 @@ export function useWallet() {
     transactionsLoading,
     initializeDeposit,
     verifyDeposit,
+    isWithdrawalLocked,
     withdraw,
     refetchWallet,
     depositPending: initializeDepositMutation.isPending,
