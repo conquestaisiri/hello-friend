@@ -92,7 +92,8 @@ function WalletPageContent() {
   const [phantomAvailable, setPhantomAvailable] = useState(false);
 
   const totalBalance = availableBalance + escrowBalance;
-  const usdcEquivalent = (availableBalance / NGN_TO_USDC_RATE).toFixed(2);
+  const usdcEquivalent = usdcNgn > 0 ? (availableBalance / usdcNgn).toFixed(2) : "0.00";
+  const solEquivalent = solNgn > 0 ? (availableBalance / solNgn).toFixed(6) : "0.000000";
   const filteredTransactions = filter === "all" ? transactions : transactions.filter((t) => t.type === filter);
 
   // Check for Phantom on mount
