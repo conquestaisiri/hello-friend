@@ -150,7 +150,7 @@ export function Navbar({ variant = 'default' }: NavbarProps) {
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
               >
-                <img src="/images/helpchain-logo.png" alt="HelpChain" className="h-9 w-9 rounded-lg object-contain" />
+                <HelpChainLogo size="md" className="rounded-lg" />
                 <span className={cn(
                   "text-lg font-bold tracking-tight transition-colors duration-300",
                   shouldBeTransparent ? "text-white" : "text-foreground"
