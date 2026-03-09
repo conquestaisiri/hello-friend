@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useWallet, type Transaction } from "@/hooks/use-wallet";
 import { useLocalizationStore } from "@/stores/localization-store";
 import { useFirebaseAuth } from "@/contexts/FirebaseAuthContext";
@@ -13,13 +14,14 @@ import { useToast } from "@/hooks/use-toast";
 import {
   Wallet, ArrowUpRight, ArrowDownLeft, Clock, CheckCircle, XCircle,
   TrendingUp, Shield, CircleDollarSign, Coins, Eye, EyeOff,
-  Download, Upload, Filter, CreditCard, Building, Globe, Loader2, ExternalLink
+  Download, Upload, Filter, CreditCard, Building, Globe, Loader2, ExternalLink, Link2
 } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { cn } from "@/lib/utils";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 
 const NGN_TO_USDC_RATE = 1500;
+const WALLET_API = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/wallet-api`;
 
 function TransactionIcon({ type }: { type: string }) {
   switch (type) {
@@ -45,13 +47,22 @@ function StatusBadge({ status }: { status: string }) {
   );
 }
 
+// Phantom wallet detection
+function getPhantomProvider() {
+  if (typeof window !== "undefined" && "solana" in window) {
+    const provider = (window as any).solana;
+    if (provider?.isPhantom) return provider;
+  }
+  return null;
+}
+
 function WalletPageContent() {
   const {
     availableBalance, escrowBalance, transactions, isLoading, transactionsLoading,
     initializeDeposit, verifyDeposit, withdraw, refetchWallet,
     depositPending, verifyPending, withdrawPending,
   } = useWallet();
-  const { user } = useFirebaseAuth();
+  const { user, getIdToken } = useFirebaseAuth();
   const { formatLocal, currency } = useLocalizationStore();
   const { toast } = useToast();
 
@@ -66,9 +77,117 @@ function WalletPageContent() {
   const [cryptoAddress, setCryptoAddress] = useState("");
   const [verifyingPayment, setVerifyingPayment] = useState(false);
 
+  // Bank withdrawal fields
+  const [banks, setBanks] = useState<{ name: string; code: string }[]>([]);
+  const [selectedBank, setSelectedBank] = useState("");
+  const [accountNumber, setAccountNumber] = useState("");
+  const [accountName, setAccountName] = useState("");
+  const [verifyingAccount, setVerifyingAccount] = useState(false);
+  const [banksLoading, setBanksLoading] = useState(false);
+
+  // Phantom wallet state
+  const [phantomConnected, setPhantomConnected] = useState(false);
+  const [phantomAddress, setPhantomAddress] = useState("");
+  const [phantomAvailable, setPhantomAvailable] = useState(false);
+
   const totalBalance = availableBalance + escrowBalance;
   const usdcEquivalent = (availableBalance / NGN_TO_USDC_RATE).toFixed(2);
   const filteredTransactions = filter === "all" ? transactions : transactions.filter((t) => t.type === filter);
+
+  // Check for Phantom on mount
+  useEffect(() => {
+    const provider = getPhantomProvider();
+    setPhantomAvailable(!!provider);
+    if (provider?.isConnected && provider.publicKey) {
+      setPhantomConnected(true);
+      setPhantomAddress(provider.publicKey.toString());
+    }
+  }, []);
+
+  // Load banks when withdrawal opens with bank method
+  useEffect(() => {
+    if (withdrawOpen && withdrawMethod === "bank" && banks.length === 0) {
+      loadBanks();
+    }
+  }, [withdrawOpen, withdrawMethod]);
+
+  // Auto-verify account when bank + 10-digit account number
+  useEffect(() => {
+    if (selectedBank && accountNumber.length === 10) {
+      verifyBankAccount();
+    } else {
+      setAccountName("");
+    }
+  }, [selectedBank, accountNumber]);
+
+  const loadBanks = async () => {
+    setBanksLoading(true);
+    try {
+      const token = await getIdToken();
+      const res = await fetch(`${WALLET_API}/banks`, {
+        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setBanks(data.banks || []);
+      }
+    } catch (err) {
+      console.error("Failed to load banks:", err);
+    } finally {
+      setBanksLoading(false);
+    }
+  };
+
+  const verifyBankAccount = async () => {
+    setVerifyingAccount(true);
+    setAccountName("");
+    try {
+      const token = await getIdToken();
+      const res = await fetch(`${WALLET_API}/verify-account`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ accountNumber, bankCode: selectedBank }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setAccountName(data.accountName || "");
+      } else {
+        const data = await res.json();
+        toast({ title: "Verification failed", description: data.message, variant: "destructive" });
+      }
+    } catch (err) {
+      console.error("Failed to verify account:", err);
+    } finally {
+      setVerifyingAccount(false);
+    }
+  };
+
+  const connectPhantom = async () => {
+    const provider = getPhantomProvider();
+    if (!provider) {
+      window.open("https://phantom.app/", "_blank");
+      return;
+    }
+    try {
+      const resp = await provider.connect();
+      setPhantomConnected(true);
+      setPhantomAddress(resp.publicKey.toString());
+      setCryptoAddress(resp.publicKey.toString());
+      toast({ title: "Wallet Connected", description: `Connected to ${resp.publicKey.toString().slice(0, 8)}...` });
+    } catch (err: any) {
+      toast({ title: "Connection failed", description: err.message, variant: "destructive" });
+    }
+  };
+
+  const disconnectPhantom = async () => {
+    const provider = getPhantomProvider();
+    if (provider) {
+      await provider.disconnect();
+    }
+    setPhantomConnected(false);
+    setPhantomAddress("");
+    setCryptoAddress("");
+  };
 
   // Handle Paystack redirect callback
   useEffect(() => {
@@ -81,18 +200,11 @@ function WalletPageContent() {
 
       verifyDeposit(ref)
         .then((result) => {
-          toast({
-            title: "💰 Deposit Successful!",
-            description: `₦${result.amount?.toLocaleString() || ""} has been added to your wallet.`,
-          });
+          toast({ title: "💰 Deposit Successful!", description: `₦${result.amount?.toLocaleString() || ""} has been added to your wallet.` });
           refetchWallet();
         })
         .catch((err) => {
-          toast({
-            title: "Payment Verification",
-            description: err.message || "Could not verify payment. It may still be processing.",
-            variant: "destructive",
-          });
+          toast({ title: "Payment Verification", description: err.message || "Could not verify payment.", variant: "destructive" });
         })
         .finally(() => setVerifyingPayment(false));
     }
@@ -104,7 +216,6 @@ function WalletPageContent() {
       toast({ title: "Invalid amount", description: "Minimum deposit is ₦100", variant: "destructive" });
       return;
     }
-
     try {
       const result = await initializeDeposit(amount);
       if (result.authorization_url) {
@@ -113,11 +224,7 @@ function WalletPageContent() {
         throw new Error("No payment URL received");
       }
     } catch (err: any) {
-      toast({
-        title: "Deposit failed",
-        description: err.message || "Unable to start payment. Try again.",
-        variant: "destructive",
-      });
+      toast({ title: "Deposit failed", description: err.message || "Unable to start payment.", variant: "destructive" });
     }
   };
 
@@ -127,27 +234,24 @@ function WalletPageContent() {
       toast({ title: "Invalid amount", variant: "destructive" });
       return;
     }
-
     try {
       const result = await withdraw(
         amount,
-        withdrawMethod === "bank" ? "default" : undefined,
-        withdrawMethod === "crypto" ? cryptoAddress : undefined,
+        withdrawMethod === "bank" ? selectedBank : undefined,
+        withdrawMethod === "bank" ? accountNumber : undefined,
+        withdrawMethod === "bank" ? accountName : undefined,
+        withdrawMethod === "crypto" ? (cryptoAddress || phantomAddress) : undefined,
       );
-      toast({
-        title: "Withdrawal initiated",
-        description: result.message || `₦${amount.toLocaleString()} withdrawal is being processed.`,
-      });
+      toast({ title: "Withdrawal initiated", description: result.message || `₦${amount.toLocaleString()} withdrawal is being processed.` });
       setWithdrawAmount("");
       setCryptoAddress("");
+      setAccountNumber("");
+      setAccountName("");
+      setSelectedBank("");
       setWithdrawOpen(false);
       refetchWallet();
     } catch (err: any) {
-      toast({
-        title: "Withdrawal failed",
-        description: err.message || "Unable to process withdrawal.",
-        variant: "destructive",
-      });
+      toast({ title: "Withdrawal failed", description: err.message || "Unable to process withdrawal.", variant: "destructive" });
     }
   };
 
@@ -246,7 +350,7 @@ function WalletPageContent() {
           </Card>
         </div>
 
-        {/* Crypto / Blockchain Info Card */}
+        {/* Phantom Wallet + Blockchain Info */}
         <Card className="mb-8 border-dashed border-accent/40">
           <CardContent className="p-5">
             <div className="flex items-start gap-4">
@@ -254,15 +358,34 @@ function WalletPageContent() {
                 <Globe className="h-6 w-6 text-accent" />
               </div>
               <div className="flex-1">
-                <h3 className="font-semibold text-foreground mb-1">Blockchain Integration</h3>
+                <div className="flex items-center justify-between mb-1">
+                  <h3 className="font-semibold text-foreground">Blockchain Integration</h3>
+                  {phantomConnected ? (
+                    <div className="flex items-center gap-2">
+                      <Badge variant="default" className="text-xs gap-1">
+                        <Link2 className="h-3 w-3" />
+                        {phantomAddress.slice(0, 4)}...{phantomAddress.slice(-4)}
+                      </Badge>
+                      <Button size="sm" variant="ghost" className="text-xs h-7" onClick={disconnectPhantom}>
+                        Disconnect
+                      </Button>
+                    </div>
+                  ) : (
+                    <Button size="sm" variant="outline" className="text-xs h-8 gap-1.5" onClick={connectPhantom}>
+                      <img src="https://phantom.app/img/phantom-icon-purple.svg" alt="" className="w-4 h-4" />
+                      {phantomAvailable ? "Connect Phantom" : "Install Phantom"}
+                    </Button>
+                  )}
+                </div>
                 <p className="text-sm text-muted-foreground mb-3">
-                  HelpChain uses <strong>USDC on Solana</strong> as the internal ledger for transparent, borderless value transfer.
-                  Your fiat deposits are tracked as USDC equivalents under the hood.
+                  HelpChain uses <strong>USDC on Solana</strong> as the internal ledger. Connect your Phantom wallet for crypto withdrawals.
                 </p>
                 <div className="flex flex-wrap gap-2">
                   <Badge variant="secondary" className="text-xs">USDC Ledger ✓</Badge>
                   <Badge variant="secondary" className="text-xs">Solana Network ✓</Badge>
-                  <Badge variant="outline" className="text-xs text-muted-foreground">Crypto Deposits — Coming Soon</Badge>
+                  <Badge variant={phantomConnected ? "default" : "outline"} className="text-xs">
+                    {phantomConnected ? "Phantom Connected ✓" : "Phantom — Not Connected"}
+                  </Badge>
                   <Badge variant="outline" className="text-xs text-muted-foreground">On-chain Escrow — Coming Soon</Badge>
                 </div>
               </div>
@@ -420,17 +543,81 @@ function WalletPageContent() {
                 ))}
               </div>
             </div>
+
+            {withdrawMethod === "bank" && (
+              <>
+                <div>
+                  <Label>Bank</Label>
+                  <Select value={selectedBank} onValueChange={setSelectedBank}>
+                    <SelectTrigger className="mt-2">
+                      <SelectValue placeholder={banksLoading ? "Loading banks..." : "Select your bank"} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {banks.map((b) => (
+                        <SelectItem key={b.code} value={b.code}>{b.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label>Account Number</Label>
+                  <Input
+                    placeholder="0123456789"
+                    value={accountNumber}
+                    onChange={(e) => setAccountNumber(e.target.value.replace(/\D/g, "").slice(0, 10))}
+                    className="mt-2 h-12 font-mono"
+                    maxLength={10}
+                  />
+                </div>
+                {verifyingAccount && (
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <Loader2 className="w-4 h-4 animate-spin" /> Verifying account...
+                  </div>
+                )}
+                {accountName && (
+                  <div className="bg-green-50 dark:bg-green-900/20 p-3 rounded-lg border border-green-200 dark:border-green-800">
+                    <p className="text-sm font-medium text-green-700 dark:text-green-400 flex items-center gap-2">
+                      <CheckCircle className="w-4 h-4" />
+                      {accountName}
+                    </p>
+                  </div>
+                )}
+              </>
+            )}
+
             {withdrawMethod === "crypto" && (
-              <div>
-                <Label>Wallet Address (USDC on Solana)</Label>
-                <Input
-                  placeholder="Enter Solana wallet address"
-                  value={cryptoAddress}
-                  onChange={(e) => setCryptoAddress(e.target.value)}
-                  className="mt-2 h-12 font-mono text-sm"
-                />
+              <div className="space-y-3">
+                {phantomConnected ? (
+                  <div className="bg-accent/5 p-3 rounded-xl border border-accent/20">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <img src="https://phantom.app/img/phantom-icon-purple.svg" alt="" className="w-5 h-5" />
+                        <div>
+                          <p className="text-sm font-medium">Phantom Wallet</p>
+                          <p className="text-xs text-muted-foreground font-mono">{phantomAddress.slice(0, 8)}...{phantomAddress.slice(-6)}</p>
+                        </div>
+                      </div>
+                      <Badge variant="default" className="text-xs">Connected</Badge>
+                    </div>
+                  </div>
+                ) : (
+                  <Button variant="outline" className="w-full gap-2" onClick={connectPhantom}>
+                    <img src="https://phantom.app/img/phantom-icon-purple.svg" alt="" className="w-4 h-4" />
+                    {phantomAvailable ? "Connect Phantom Wallet" : "Install Phantom Wallet"}
+                  </Button>
+                )}
+                <div>
+                  <Label>Wallet Address (USDC on Solana)</Label>
+                  <Input
+                    placeholder="Enter Solana wallet address"
+                    value={cryptoAddress || phantomAddress}
+                    onChange={(e) => setCryptoAddress(e.target.value)}
+                    className="mt-2 h-12 font-mono text-sm"
+                  />
+                </div>
               </div>
             )}
+
             <div>
               <Label>Amount ({currency.symbol})</Label>
               <div className="relative mt-2">
@@ -442,7 +629,15 @@ function WalletPageContent() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setWithdrawOpen(false)}>Cancel</Button>
-            <Button onClick={handleWithdraw} variant="destructive" disabled={withdrawPending}>
+            <Button
+              onClick={handleWithdraw}
+              variant="destructive"
+              disabled={
+                withdrawPending ||
+                (withdrawMethod === "bank" && (!selectedBank || !accountNumber || !accountName)) ||
+                (withdrawMethod === "crypto" && !cryptoAddress && !phantomAddress)
+              }
+            >
               {withdrawPending ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Processing...</> : "Withdraw"}
             </Button>
           </DialogFooter>

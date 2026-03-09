@@ -115,13 +115,13 @@ export function useWallet() {
   });
 
   const withdrawMutation = useMutation({
-    mutationFn: async ({ amount, bankAccountId, walletAddress }: { amount: number; bankAccountId?: string; walletAddress?: string }) => {
+    mutationFn: async ({ amount, bankCode, accountNumber, accountName, walletAddress }: { amount: number; bankCode?: string; accountNumber?: string; accountName?: string; walletAddress?: string }) => {
       const headers = await getAuthHeaders();
       if (!headers) throw new Error("Please sign in to withdraw");
       const res = await fetch(`${WALLET_API}/wallet/withdraw`, {
         method: "POST",
         headers,
-        body: JSON.stringify({ amount, bankAccountId, walletAddress }),
+        body: JSON.stringify({ amount, bankCode, accountNumber, accountName, walletAddress }),
       });
       if (!res.ok) {
         const data = await res.json();
@@ -146,8 +146,8 @@ export function useWallet() {
     return verifyDepositMutation.mutateAsync(reference);
   };
 
-  const withdraw = async (amount: number, bankAccountId?: string, walletAddress?: string) => {
-    return withdrawMutation.mutateAsync({ amount, bankAccountId, walletAddress });
+  const withdraw = async (amount: number, bankCode?: string, accountNumber?: string, accountName?: string, walletAddress?: string) => {
+    return withdrawMutation.mutateAsync({ amount, bankCode, accountNumber, accountName, walletAddress });
   };
 
   const isWithdrawalLocked = () => {
