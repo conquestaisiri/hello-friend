@@ -1,9 +1,12 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useFirebaseAuth } from "./use-firebase-auth";
 
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
+const WALLET_API = `${SUPABASE_URL}/functions/v1/wallet-api`;
+
 export interface Transaction {
   id: string;
-  type: "deposit" | "withdrawal" | "escrow_lock" | "escrow_release" | "escrow_refund" | "fee";
+  type: "deposit" | "withdrawal" | "escrow_lock" | "escrow_release" | "escrow_refund" | "fee" | "earning";
   amount: number;
   status: string;
   description: string;
@@ -30,11 +33,9 @@ export function useWallet() {
   const getAuthHeaders = async (): Promise<HeadersInit | undefined> => {
     try {
       const token = await getIdToken();
-      if (!token) {
-        return undefined;
-      }
+      if (!token) return undefined;
       return {
-        "Authorization": `Bearer ${token}`,
+        Authorization: `Bearer ${token}`,
         "Content-Type": "application/json",
       };
     } catch (error) {
@@ -43,16 +44,14 @@ export function useWallet() {
     }
   };
 
-  const { data: walletData, isLoading: walletLoading, refetch: refetchWallet } = useQuery<{ wallet: Wallet }>({
+  const { data: walletData, isLoading: walletLoading, refetch: refetchWallet } = useQuery<{ wallet: Wallet | null }>({
     queryKey: ["wallet", user?.uid],
     queryFn: async () => {
       const headers = await getAuthHeaders();
-      if (!headers) {
-        return { wallet: null as any };
-      }
-      const res = await fetch("/api/wallet", { headers });
+      if (!headers) return { wallet: null };
+      const res = await fetch(`${WALLET_API}/wallet`, { headers });
       if (!res.ok) {
-        if (res.status === 401) return { wallet: null as any };
+        if (res.status === 401) return { wallet: null };
         throw new Error("Failed to fetch wallet");
       }
       return res.json();
@@ -65,10 +64,8 @@ export function useWallet() {
     queryKey: ["wallet-transactions", user?.uid],
     queryFn: async () => {
       const headers = await getAuthHeaders();
-      if (!headers) {
-        return { transactions: [] };
-      }
-      const res = await fetch("/api/wallet/transactions", { headers });
+      if (!headers) return { transactions: [] };
+      const res = await fetch(`${WALLET_API}/wallet/transactions`, { headers });
       if (!res.ok) {
         if (res.status === 401) return { transactions: [] };
         throw new Error("Failed to fetch transactions");
@@ -80,15 +77,13 @@ export function useWallet() {
   });
 
   const initializeDepositMutation = useMutation({
-    mutationFn: async (amount: number) => {
+    mutationFn: async ({ amount, callbackUrl }: { amount: number; callbackUrl?: string }) => {
       const headers = await getAuthHeaders();
-      if (!headers) {
-        throw new Error("Please sign in to make a deposit");
-      }
-      const res = await fetch("/api/wallet/deposit/initialize", {
+      if (!headers) throw new Error("Please sign in to make a deposit");
+      const res = await fetch(`${WALLET_API}/wallet/deposit/initialize`, {
         method: "POST",
         headers,
-        body: JSON.stringify({ amount }),
+        body: JSON.stringify({ amount, callbackUrl }),
       });
       if (!res.ok) {
         const data = await res.json();
@@ -101,10 +96,8 @@ export function useWallet() {
   const verifyDepositMutation = useMutation({
     mutationFn: async (reference: string) => {
       const headers = await getAuthHeaders();
-      if (!headers) {
-        throw new Error("Please sign in to verify deposit");
-      }
-      const res = await fetch("/api/wallet/deposit/verify", {
+      if (!headers) throw new Error("Please sign in to verify deposit");
+      const res = await fetch(`${WALLET_API}/wallet/deposit/verify`, {
         method: "POST",
         headers,
         body: JSON.stringify({ reference }),
@@ -122,15 +115,13 @@ export function useWallet() {
   });
 
   const withdrawMutation = useMutation({
-    mutationFn: async ({ amount, bankAccountId }: { amount: number; bankAccountId?: string }) => {
+    mutationFn: async ({ amount, bankAccountId, walletAddress }: { amount: number; bankAccountId?: string; walletAddress?: string }) => {
       const headers = await getAuthHeaders();
-      if (!headers) {
-        throw new Error("Please sign in to withdraw");
-      }
-      const res = await fetch("/api/wallet/withdraw", {
+      if (!headers) throw new Error("Please sign in to withdraw");
+      const res = await fetch(`${WALLET_API}/wallet/withdraw`, {
         method: "POST",
         headers,
-        body: JSON.stringify({ amount, bankAccountId }),
+        body: JSON.stringify({ amount, bankAccountId, walletAddress }),
       });
       if (!res.ok) {
         const data = await res.json();
@@ -145,21 +136,18 @@ export function useWallet() {
   });
 
   const initializeDeposit = async (amount: number) => {
-    const result = await initializeDepositMutation.mutateAsync(amount);
-    return result;
+    const callbackUrl = typeof window !== "undefined"
+      ? `${window.location.origin}/wallet`
+      : "https://helpchain.lovable.app/wallet";
+    return initializeDepositMutation.mutateAsync({ amount, callbackUrl });
   };
 
   const verifyDeposit = async (reference: string) => {
     return verifyDepositMutation.mutateAsync(reference);
   };
 
-  const withdraw = async (amount: number, bankAccountId?: string) => {
-    return withdrawMutation.mutateAsync({ amount, bankAccountId });
-  };
-
-  const isWithdrawalLocked = () => {
-    const wallet = walletData?.wallet;
-    return wallet ? wallet.escrowBalance > 0 : false;
+  const withdraw = async (amount: number, bankAccountId?: string, walletAddress?: string) => {
+    return withdrawMutation.mutateAsync({ amount, bankAccountId, walletAddress });
   };
 
   return {
@@ -174,7 +162,6 @@ export function useWallet() {
     verifyDeposit,
     withdraw,
     refetchWallet,
-    isWithdrawalLocked,
     depositPending: initializeDepositMutation.isPending,
     verifyPending: verifyDepositMutation.isPending,
     withdrawPending: withdrawMutation.isPending,

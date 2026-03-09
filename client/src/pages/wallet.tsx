@@ -5,22 +5,23 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useWalletLocalStore, type LocalTransaction } from "@/stores/wallet-local-store";
+import { useWallet, type Transaction } from "@/hooks/use-wallet";
 import { useLocalizationStore } from "@/stores/localization-store";
+import { useFirebaseAuth } from "@/contexts/FirebaseAuthContext";
 import { useToast } from "@/hooks/use-toast";
 import {
   Wallet, ArrowUpRight, ArrowDownLeft, Clock, CheckCircle, XCircle,
   TrendingUp, Shield, CircleDollarSign, Coins, Eye, EyeOff,
-  Download, Upload, Filter, CreditCard, Building, Globe, Copy
+  Download, Upload, Filter, CreditCard, Building, Globe, Loader2, ExternalLink
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 
-function TransactionIcon({ type }: { type: LocalTransaction["type"] }) {
+const NGN_TO_USDC_RATE = 1500;
+
+function TransactionIcon({ type }: { type: string }) {
   switch (type) {
     case "deposit": return <ArrowDownLeft className="h-4 w-4 text-chart-2" />;
     case "withdrawal": return <ArrowUpRight className="h-4 w-4 text-destructive" />;
@@ -45,42 +46,131 @@ function StatusBadge({ status }: { status: string }) {
 }
 
 function WalletPageContent() {
-  const { availableBalance, escrowBalance, usdcBalance, transactions, deposit, withdraw } = useWalletLocalStore();
+  const {
+    availableBalance, escrowBalance, transactions, isLoading, transactionsLoading,
+    initializeDeposit, verifyDeposit, withdraw, refetchWallet,
+    depositPending, verifyPending, withdrawPending,
+  } = useWallet();
+  const { user } = useFirebaseAuth();
   const { formatLocal, currency } = useLocalizationStore();
   const { toast } = useToast();
+
   const [showAssets, setShowAssets] = useState(false);
   const [filter, setFilter] = useState("all");
   const [depositOpen, setDepositOpen] = useState(false);
   const [withdrawOpen, setWithdrawOpen] = useState(false);
   const [depositAmount, setDepositAmount] = useState("");
   const [withdrawAmount, setWithdrawAmount] = useState("");
-  const [depositMethod, setDepositMethod] = useState("bank");
+  const [depositMethod, setDepositMethod] = useState("card");
   const [withdrawMethod, setWithdrawMethod] = useState("bank");
+  const [cryptoAddress, setCryptoAddress] = useState("");
+  const [verifyingPayment, setVerifyingPayment] = useState(false);
 
   const totalBalance = availableBalance + escrowBalance;
+  const usdcEquivalent = (availableBalance / NGN_TO_USDC_RATE).toFixed(2);
   const filteredTransactions = filter === "all" ? transactions : transactions.filter((t) => t.type === filter);
 
-  const handleDeposit = () => {
+  // Handle Paystack redirect callback
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const ref = params.get("reference") || params.get("trxref");
+
+    if (ref && user) {
+      window.history.replaceState({}, "", "/wallet");
+      setVerifyingPayment(true);
+
+      verifyDeposit(ref)
+        .then((result) => {
+          toast({
+            title: "💰 Deposit Successful!",
+            description: `₦${result.amount?.toLocaleString() || ""} has been added to your wallet.`,
+          });
+          refetchWallet();
+        })
+        .catch((err) => {
+          toast({
+            title: "Payment Verification",
+            description: err.message || "Could not verify payment. It may still be processing.",
+            variant: "destructive",
+          });
+        })
+        .finally(() => setVerifyingPayment(false));
+    }
+  }, [user]);
+
+  const handleDeposit = async () => {
     const amount = parseFloat(depositAmount);
-    if (!amount || amount <= 0) { toast({ title: "Invalid amount", variant: "destructive" }); return; }
-    deposit(amount);
-    toast({ title: "Deposit successful", description: `${formatLocal(amount)} added to your wallet` });
-    setDepositAmount("");
-    setDepositOpen(false);
+    if (!amount || amount < 100) {
+      toast({ title: "Invalid amount", description: "Minimum deposit is ₦100", variant: "destructive" });
+      return;
+    }
+
+    try {
+      const result = await initializeDeposit(amount);
+      if (result.authorization_url) {
+        window.location.href = result.authorization_url;
+      } else {
+        throw new Error("No payment URL received");
+      }
+    } catch (err: any) {
+      toast({
+        title: "Deposit failed",
+        description: err.message || "Unable to start payment. Try again.",
+        variant: "destructive",
+      });
+    }
   };
 
-  const handleWithdraw = () => {
+  const handleWithdraw = async () => {
     const amount = parseFloat(withdrawAmount);
-    if (!amount || amount <= 0) { toast({ title: "Invalid amount", variant: "destructive" }); return; }
-    const success = withdraw(amount);
-    if (success) {
-      toast({ title: "Withdrawal initiated", description: `${formatLocal(amount)} will be sent to your account` });
-    } else {
-      toast({ title: "Insufficient balance", variant: "destructive" });
+    if (!amount || amount <= 0) {
+      toast({ title: "Invalid amount", variant: "destructive" });
+      return;
     }
-    setWithdrawAmount("");
-    setWithdrawOpen(false);
+
+    try {
+      const result = await withdraw(
+        amount,
+        withdrawMethod === "bank" ? "default" : undefined,
+        withdrawMethod === "crypto" ? cryptoAddress : undefined,
+      );
+      toast({
+        title: "Withdrawal initiated",
+        description: result.message || `₦${amount.toLocaleString()} withdrawal is being processed.`,
+      });
+      setWithdrawAmount("");
+      setCryptoAddress("");
+      setWithdrawOpen(false);
+      refetchWallet();
+    } catch (err: any) {
+      toast({
+        title: "Withdrawal failed",
+        description: err.message || "Unable to process withdrawal.",
+        variant: "destructive",
+      });
+    }
   };
+
+  if (verifyingPayment) {
+    return (
+      <div className="min-h-screen flex flex-col bg-background">
+        <Navbar />
+        <main className="flex-1 flex items-center justify-center">
+          <div className="text-center space-y-4">
+            <div className="relative mx-auto w-fit">
+              <div className="absolute inset-0 bg-primary/20 rounded-full animate-ping" />
+              <div className="relative bg-card p-5 rounded-full shadow-xl">
+                <Loader2 className="w-10 h-10 text-primary animate-spin" />
+              </div>
+            </div>
+            <h2 className="text-xl font-bold text-foreground">Verifying your payment...</h2>
+            <p className="text-muted-foreground text-sm">This only takes a moment.</p>
+          </div>
+        </main>
+        <Footer />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
@@ -111,7 +201,11 @@ function WalletPageContent() {
                   {showAssets ? <EyeOff size={18} /> : <Eye size={18} />}
                 </button>
               </div>
-              <p className="text-4xl font-bold tracking-tight">{formatLocal(totalBalance)}</p>
+              {isLoading ? (
+                <div className="h-12 flex items-center"><Loader2 className="w-6 h-6 animate-spin text-primary-foreground/60" /></div>
+              ) : (
+                <p className="text-4xl font-bold tracking-tight">{formatLocal(totalBalance)}</p>
+              )}
               <div className="flex gap-6 mt-4 text-sm">
                 <div><span className="text-primary-foreground/70">Available</span><p className="font-semibold">{formatLocal(availableBalance)}</p></div>
                 <div><span className="text-primary-foreground/70">In Escrow</span><p className="font-semibold">{formatLocal(escrowBalance)}</p></div>
@@ -126,10 +220,22 @@ function WalletPageContent() {
             <CardContent className="space-y-3">
               {showAssets ? (
                 <>
-                  <div className="flex items-center justify-between"><span className="text-sm text-muted-foreground">USDC</span><span className="text-sm font-semibold">${usdcBalance.toFixed(2)}</span></div>
-                  <div className="flex items-center justify-between"><span className="text-sm text-muted-foreground">SOL</span><span className="text-sm font-semibold">0.00</span></div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-muted-foreground">{currency.code}</span>
+                    <span className="text-sm font-semibold">{formatLocal(availableBalance)}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-muted-foreground">USDC (equiv.)</span>
+                    <span className="text-sm font-semibold">${usdcEquivalent}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-muted-foreground">SOL</span>
+                    <span className="text-sm font-semibold text-muted-foreground">0.00</span>
+                  </div>
                   <div className="h-px bg-border my-2" />
-                  <p className="text-xs text-muted-foreground">Fiat values are shown by default. Toggle to view crypto assets.</p>
+                  <p className="text-xs text-muted-foreground">
+                    USDC is the internal unit of account. Fiat values are displayed for convenience.
+                  </p>
                 </>
               ) : (
                 <div className="text-center py-4">
@@ -139,6 +245,30 @@ function WalletPageContent() {
             </CardContent>
           </Card>
         </div>
+
+        {/* Crypto / Blockchain Info Card */}
+        <Card className="mb-8 border-dashed border-accent/40">
+          <CardContent className="p-5">
+            <div className="flex items-start gap-4">
+              <div className="bg-accent/10 p-3 rounded-xl">
+                <Globe className="h-6 w-6 text-accent" />
+              </div>
+              <div className="flex-1">
+                <h3 className="font-semibold text-foreground mb-1">Blockchain Integration</h3>
+                <p className="text-sm text-muted-foreground mb-3">
+                  HelpChain uses <strong>USDC on Solana</strong> as the internal ledger for transparent, borderless value transfer.
+                  Your fiat deposits are tracked as USDC equivalents under the hood.
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  <Badge variant="secondary" className="text-xs">USDC Ledger ✓</Badge>
+                  <Badge variant="secondary" className="text-xs">Solana Network ✓</Badge>
+                  <Badge variant="outline" className="text-xs text-muted-foreground">Crypto Deposits — Coming Soon</Badge>
+                  <Badge variant="outline" className="text-xs text-muted-foreground">On-chain Escrow — Coming Soon</Badge>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Transaction History */}
         <Card>
@@ -160,7 +290,9 @@ function WalletPageContent() {
             </div>
           </CardHeader>
           <CardContent>
-            {filteredTransactions.length === 0 ? (
+            {transactionsLoading ? (
+              <div className="text-center py-12"><Loader2 className="h-8 w-8 mx-auto animate-spin text-muted-foreground" /></div>
+            ) : filteredTransactions.length === 0 ? (
               <div className="text-center py-12 text-muted-foreground">
                 <CircleDollarSign className="h-12 w-12 mx-auto mb-3 opacity-20" />
                 <p className="text-sm">No transactions found</p>
@@ -195,21 +327,29 @@ function WalletPageContent() {
       <Dialog open={depositOpen} onOpenChange={setDepositOpen}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Deposit Funds</DialogTitle>
-            <DialogDescription>Add money to your HelpChain wallet</DialogDescription>
+            <DialogTitle className="flex items-center gap-3">
+              <span className="bg-gradient-to-br from-primary to-accent p-2 rounded-xl text-primary-foreground shadow-lg">
+                <Shield className="w-5 h-5" />
+              </span>
+              Fund Your Wallet
+            </DialogTitle>
+            <DialogDescription>Add funds securely via Paystack (Card, Bank Transfer, USSD)</DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div>
               <Label>Payment Method</Label>
               <div className="grid grid-cols-2 gap-3 mt-2">
                 {[
-                  { value: "bank", label: "Bank Transfer", icon: Building },
                   { value: "card", label: "Debit/Credit Card", icon: CreditCard },
+                  { value: "bank", label: "Bank Transfer", icon: Building },
                 ].map((m) => (
                   <div key={m.value}
-                    className={`cursor-pointer rounded-xl border-2 p-4 text-center transition-all ${depositMethod === m.value ? "border-primary bg-primary/5" : "border-border hover:border-primary/30"}`}
+                    className={cn(
+                      "cursor-pointer rounded-xl border-2 p-4 text-center transition-all",
+                      depositMethod === m.value ? "border-primary bg-primary/5" : "border-border hover:border-primary/30",
+                    )}
                     onClick={() => setDepositMethod(m.value)}>
-                    <m.icon className={`w-6 h-6 mx-auto mb-2 ${depositMethod === m.value ? "text-primary" : "text-muted-foreground"}`} />
+                    <m.icon className={cn("w-6 h-6 mx-auto mb-2", depositMethod === m.value ? "text-primary" : "text-muted-foreground")} />
                     <p className="text-sm font-medium">{m.label}</p>
                   </div>
                 ))}
@@ -219,20 +359,36 @@ function WalletPageContent() {
               <Label>Amount ({currency.symbol})</Label>
               <div className="relative mt-2">
                 <span className="absolute left-4 top-1/2 -translate-y-1/2 text-xl font-mono text-muted-foreground">{currency.symbol}</span>
-                <Input type="number" value={depositAmount} onChange={(e) => setDepositAmount(e.target.value)} placeholder="0" className="h-14 text-xl font-mono pl-10" />
+                <Input type="number" value={depositAmount} onChange={(e) => setDepositAmount(e.target.value)} placeholder="0" className="h-14 text-xl font-mono pl-10" min="100" />
+              </div>
+              <div className="flex justify-between text-xs text-muted-foreground mt-1">
+                <span>Minimum: ₦100</span>
+                <span>Current Balance: {formatLocal(availableBalance)}</span>
               </div>
             </div>
             <div className="flex gap-2">
-              {[5000, 10000, 25000, 50000].map((q) => (
+              {[1000, 5000, 10000, 25000].map((q) => (
                 <Button key={q} type="button" variant="outline" size="sm" className="flex-1 text-xs" onClick={() => setDepositAmount(q.toString())}>
-                  {formatLocal(q)}
+                  {currency.symbol}{(q / 1000)}k
                 </Button>
               ))}
+            </div>
+            <div className="bg-green-50 dark:bg-green-900/20 p-3 rounded-lg border border-green-200 dark:border-green-800">
+              <p className="text-xs text-green-700 dark:text-green-400 flex items-center gap-2">
+                <Shield className="w-4 h-4" />
+                Secured by Paystack — Nigeria's leading payment processor
+              </p>
             </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setDepositOpen(false)}>Cancel</Button>
-            <Button onClick={handleDeposit} className="bg-gradient-to-r from-primary to-accent text-primary-foreground">Deposit</Button>
+            <Button onClick={handleDeposit} disabled={parseFloat(depositAmount) < 100 || depositPending} className="shadow-lg shadow-primary/20">
+              {depositPending ? (
+                <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Processing...</>
+              ) : (
+                <>Continue to Payment <ExternalLink className="w-4 h-4 ml-2" /></>
+              )}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -253,9 +409,12 @@ function WalletPageContent() {
                   { value: "crypto", label: "Crypto Wallet", icon: Globe },
                 ].map((m) => (
                   <div key={m.value}
-                    className={`cursor-pointer rounded-xl border-2 p-4 text-center transition-all ${withdrawMethod === m.value ? "border-primary bg-primary/5" : "border-border hover:border-primary/30"}`}
+                    className={cn(
+                      "cursor-pointer rounded-xl border-2 p-4 text-center transition-all",
+                      withdrawMethod === m.value ? "border-primary bg-primary/5" : "border-border hover:border-primary/30",
+                    )}
                     onClick={() => setWithdrawMethod(m.value)}>
-                    <m.icon className={`w-6 h-6 mx-auto mb-2 ${withdrawMethod === m.value ? "text-primary" : "text-muted-foreground"}`} />
+                    <m.icon className={cn("w-6 h-6 mx-auto mb-2", withdrawMethod === m.value ? "text-primary" : "text-muted-foreground")} />
                     <p className="text-sm font-medium">{m.label}</p>
                   </div>
                 ))}
@@ -264,7 +423,12 @@ function WalletPageContent() {
             {withdrawMethod === "crypto" && (
               <div>
                 <Label>Wallet Address (USDC on Solana)</Label>
-                <Input placeholder="Enter Solana wallet address" className="mt-2 h-12" />
+                <Input
+                  placeholder="Enter Solana wallet address"
+                  value={cryptoAddress}
+                  onChange={(e) => setCryptoAddress(e.target.value)}
+                  className="mt-2 h-12 font-mono text-sm"
+                />
               </div>
             )}
             <div>
@@ -278,7 +442,9 @@ function WalletPageContent() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setWithdrawOpen(false)}>Cancel</Button>
-            <Button onClick={handleWithdraw} variant="destructive">Withdraw</Button>
+            <Button onClick={handleWithdraw} variant="destructive" disabled={withdrawPending}>
+              {withdrawPending ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Processing...</> : "Withdraw"}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
