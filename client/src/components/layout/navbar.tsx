@@ -395,9 +395,7 @@ export function Navbar({ variant = 'default' }: NavbarProps) {
                   {/* Header */}
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <div className="h-9 w-9 bg-gradient-to-br from-primary to-accent rounded-xl flex items-center justify-center text-primary-foreground">
-                        <Sparkles size={18} />
-                      </div>
+                      <img src="/images/helpchain-logo.png" alt="HelpChain" className="h-9 w-9 rounded-xl object-contain" />
                       <span className="text-lg font-bold text-foreground">HelpChain</span>
                     </div>
                     <Button 

@@ -541,7 +541,7 @@ function WalletPageContent() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setDepositOpen(false)}>Cancel</Button>
-            <Button onClick={handleDeposit} disabled={parseFloat(depositAmount) < 100 || depositPending} className="shadow-lg shadow-primary/20">
+            <Button onClick={handleDeposit} disabled={depositMethod === "crypto" || parseFloat(depositAmount) < 100 || depositPending} className="shadow-lg shadow-primary/20">
               {depositPending ? (
                 <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Processing...</>
               ) : (

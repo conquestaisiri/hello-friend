@@ -12,9 +12,7 @@ export function Footer() {
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 mb-16">
             <div className="lg:col-span-4">
               <div className="flex items-center gap-3 mb-6">
-                <div className="h-10 w-10 bg-gradient-to-br from-primary to-accent rounded-xl flex items-center justify-center text-white shadow-lg">
-                  <Sparkles size={22} />
-                </div>
+                <img src="/images/helpchain-logo.png" alt="HelpChain" className="h-10 w-10 rounded-xl object-contain" />
                 <span className="text-2xl font-bold tracking-tight text-white">HelpChain</span>
               </div>
               <p className="text-slate-400 leading-relaxed mb-8 max-w-sm">
