@@ -79,7 +79,7 @@ export default function AboutPage() {
             >
               <div className="aspect-video rounded-2xl bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center">
                 <div className="text-center">
-                  <Sparkles className="w-16 h-16 text-primary mx-auto mb-4" />
+                  <HelpChainLogo size="xl" className="mx-auto mb-4" />
                   <p className="text-muted-foreground">Video coming soon</p>
                 </div>
               </div>
