@@ -21,7 +21,6 @@ import { useState, useEffect, useCallback } from "react";
 import { cn } from "@/lib/utils";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 
-const NGN_TO_USDC_RATE = 1500;
 const WALLET_API = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/wallet-api`;
 
 function TransactionIcon({ type }: { type: string }) {
