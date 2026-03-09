@@ -71,9 +71,11 @@ export default function AuthPage() {
           return;
         }
         await signUp(email, password, displayName);
+        // Send welcome notification
+        setTimeout(() => sendWelcomeNotification(displayName), 2000);
         toast({
-          title: "Account created!",
-          description: "Please check your email to verify your account.",
+          title: "Account created! 🎉",
+          description: "Welcome to HelpChain! Please check your email to verify your account.",
         });
         setLocation("/profile");
       } else if (mode === "reset") {
