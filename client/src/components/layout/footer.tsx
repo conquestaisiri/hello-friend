@@ -1,4 +1,4 @@
-import { Sparkles, Twitter, Facebook, Instagram, Linkedin, Mail, Globe, Shield, ArrowRight } from "lucide-react";
+import { Twitter, Facebook, Instagram, Linkedin, Mail, Globe, Shield, ArrowRight } from "lucide-react";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
