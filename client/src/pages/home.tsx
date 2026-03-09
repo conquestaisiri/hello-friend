@@ -139,7 +139,7 @@ export default function Home() {
             <motion.div initial={{ opacity: 0, y: 40 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.9 }}>
               <Badge className="mb-8 px-5 py-2 bg-white/10 text-white border-white/20 rounded-full text-sm backdrop-blur-sm">
                 <Sparkles className="w-4 h-4 mr-2 text-accent" />
-                Trusted by users in 120+ countries
+                Secure & Verified Helper Community
               </Badge>
 
               <h1 className="text-3xl sm:text-4xl md:text-6xl lg:text-7xl font-bold text-white leading-[1.05] mb-6 md:mb-8 font-heading">

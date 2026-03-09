@@ -90,7 +90,7 @@ export function Footer() {
           <div className="border-t border-slate-800 pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
             <div className="flex items-center gap-2 text-slate-400 text-sm">
               <Globe className="w-4 h-4" />
-              <span>Serving users in 120+ countries</span>
+              <span>Building a trusted helper community</span>
             </div>
             <p className="text-sm text-slate-500">© {new Date().getFullYear()} HelpChain. All rights reserved.</p>
             <div className="flex gap-6 text-sm text-slate-400">
