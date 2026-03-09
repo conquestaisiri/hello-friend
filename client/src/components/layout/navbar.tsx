@@ -396,7 +396,7 @@ export function Navbar({ variant = 'default' }: NavbarProps) {
                   {/* Header */}
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <img src="/images/helpchain-logo.png" alt="HelpChain" className="h-9 w-9 rounded-xl object-contain" />
+                      <HelpChainLogo size="md" className="rounded-xl" />
                       <span className="text-lg font-bold text-foreground">HelpChain</span>
                     </div>
                     <Button 
