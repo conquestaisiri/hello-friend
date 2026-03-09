@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useLocation, useSearch } from "wouter";
 import { useFirebaseAuth } from "@/hooks/use-firebase-auth";
+import { useNotifications } from "@/hooks/use-notifications";
 import { Navbar } from "@/components/layout/navbar";
 import { Footer } from "@/components/layout/footer";
 import { Button } from "@/components/ui/button";
@@ -18,6 +19,7 @@ export default function AuthPage() {
   const initialMode = new URLSearchParams(search).get("mode") || "login";
   
   const { user, signIn, signUp, signInWithGoogle, resetPassword, loading } = useFirebaseAuth();
+  const { sendWelcomeNotification } = useNotifications();
   const { toast } = useToast();
   
   const [mode, setMode] = useState<"login" | "signup" | "reset">(
@@ -69,9 +71,11 @@ export default function AuthPage() {
           return;
         }
         await signUp(email, password, displayName);
+        // Send welcome notification
+        setTimeout(() => sendWelcomeNotification(displayName), 2000);
         toast({
-          title: "Account created!",
-          description: "Please check your email to verify your account.",
+          title: "Account created! 🎉",
+          description: "Welcome to HelpChain! Please check your email to verify your account.",
         });
         setLocation("/profile");
       } else if (mode === "reset") {
@@ -104,6 +108,8 @@ export default function AuthPage() {
   const handleGoogleSignIn = async () => {
     try {
       await signInWithGoogle();
+      // Send welcome notification for first-time Google sign-in
+      setTimeout(() => sendWelcomeNotification(user?.displayName || undefined), 2000);
       toast({
         title: "Welcome!",
         description: "You have successfully signed in with Google.",

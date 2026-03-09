@@ -13,14 +13,13 @@ import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, For
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { useFirebaseAuth } from "@/hooks/use-firebase-auth";
+import { useTasksApi } from "@/hooks/use-tasks-api";
+import { useWallet } from "@/hooks/use-wallet";
+import { useLocalizationStore } from "@/stores/localization-store";
 import { Loader2, ArrowLeft, ArrowRight, MapPin, Navigation, Check, Users, Globe, Upload } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useLocation } from "wouter";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
-import { useTasksStore } from "@/stores/tasks-store";
-import { useWalletLocalStore } from "@/stores/wallet-local-store";
-import { useLocalizationStore } from "@/stores/localization-store";
-import { useSectorStore } from "@/stores/sector-store";
 
 const CATEGORIES = [
   { value: "digital_work", label: "Digital Work" },
@@ -67,10 +66,9 @@ function CreateRequestContent() {
   const { toast } = useToast();
   const [, setLocation] = useLocation();
   const { user } = useFirebaseAuth();
-  const { createTask } = useTasksStore();
-  const { availableBalance, lockEscrow } = useWalletLocalStore();
-  const { formatLocal, currency, localToUsdc } = useLocalizationStore();
-  const { sector } = useSectorStore();
+  const { createTask, createTaskPending } = useTasksApi();
+  const { availableBalance } = useWallet();
+  const { formatLocal, currency } = useLocalizationStore();
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -94,38 +92,27 @@ function CreateRequestContent() {
     const fee = Math.round(total * 0.06);
     const grandTotal = total + fee;
 
-    if (total > 0) {
-      if (availableBalance < grandTotal) {
-        toast({ title: "Insufficient Balance", description: `You need ${formatLocal(grandTotal)} but only have ${formatLocal(availableBalance)}.`, variant: "destructive" });
-        return;
-      }
-      lockEscrow(grandTotal, `Task escrow: ${values.title}`);
+    if (total > 0 && availableBalance < grandTotal) {
+      toast({ title: "Insufficient Balance", description: `You need ${formatLocal(grandTotal)} but only have ${formatLocal(availableBalance)}.`, variant: "destructive" });
+      return;
     }
 
-    createTask({
-      creatorId: user.uid,
-      creatorName: user.displayName || "User",
-      title: values.title,
-      description: values.description,
-      category: values.category,
-      location: values.locationType === "local" ? values.location || null : null,
-      isVirtual: values.locationType === "remote",
-      scheduledTime: values.deadline || null,
-      isFlexible: values.duration === "flexible",
-      estimatedDuration: null,
-      rewardAmount: values.amount > 0 ? values.amount : null,
-      rewardDescription: values.workerCount > 1 ? `Per worker × ${values.workerCount}` : null,
-      status: "published",
-      urgency: "medium",
-      sector,
-      workerCount: values.workerCount,
-      unitBudgetUsdc: values.amount > 0 ? localToUsdc(values.amount) : 0,
-      acceptedHelperId: null,
-      verificationTierRequired: 1,
-    });
+    try {
+      await createTask({
+        title: values.title,
+        description: values.description,
+        category: values.category,
+        location: values.locationType === "local" ? values.location : undefined,
+        urgency: values.duration === "same_day" ? "urgent" : "flexible",
+        budget: values.amount,
+        workerCount: values.workerCount,
+      });
 
-    toast({ title: "Task Posted!", description: "Your task is now live on the marketplace." });
-    setLocation("/discover");
+      toast({ title: "Task Posted! 🎉", description: "Your task is now live on the marketplace." });
+      setLocation("/discover");
+    } catch (err: any) {
+      toast({ title: "Failed to post task", description: err.message, variant: "destructive" });
+    }
   };
 
   const totalSteps = 4;
@@ -313,10 +300,11 @@ function CreateRequestContent() {
                             {totalBudget > 0 && (
                               <div className="mt-4 bg-muted p-4 rounded-lg space-y-2 text-sm">
                                 <div className="flex justify-between"><span className="text-muted-foreground">Per worker</span><span className="font-medium">{formatLocal(watchAmount)}</span></div>
-                                {watchWorkerCount > 1 && <div className="flex justify-between"><span className="text-muted-foreground">× {watchWorkerCount} workers</span><span className="font-medium">{formatLocal(totalBudget)}</span></div>}
-                                <div className="flex justify-between"><span className="text-muted-foreground">Platform fee (6%)</span><span className="font-medium">{formatLocal(platformFee)}</span></div>
-                                <div className="flex justify-between pt-2 border-t border-border font-bold"><span>Total</span><span className="text-primary">{formatLocal(totalCost)}</span></div>
-                                {availableBalance < totalCost && <p className="text-destructive text-xs mt-2">Insufficient balance. You have {formatLocal(availableBalance)}.</p>}
+                                <div className="flex justify-between"><span className="text-muted-foreground">× {watchWorkerCount} workers</span><span className="font-medium">{formatLocal(totalBudget)}</span></div>
+                                <div className="flex justify-between"><span className="text-muted-foreground">Platform Fee (6%)</span><span className="font-medium">{formatLocal(platformFee)}</span></div>
+                                <div className="h-px bg-border" />
+                                <div className="flex justify-between font-bold text-base"><span>Total Cost</span><span className="text-primary">{formatLocal(totalCost)}</span></div>
+                                <p className="text-xs text-muted-foreground mt-2">Available: {formatLocal(availableBalance)}</p>
                               </div>
                             )}
                             <FormMessage />
@@ -326,44 +314,45 @@ function CreateRequestContent() {
                     )}
 
                     {step === 4 && (
-                      <motion.div key="s4" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-4">
-                        <h2 className="text-xl font-bold text-foreground mb-4">Review your task</h2>
-                        {[
-                          { label: "Title", value: form.getValues("title") },
-                          { label: "Category", value: CATEGORIES.find((c) => c.value === form.getValues("category"))?.label },
-                          { label: "Work Type", value: form.getValues("locationType") === "remote" ? "Remote" : `On-site: ${form.getValues("location")}` },
-                          { label: "Duration", value: DURATION_OPTIONS.find((d) => d.value === form.getValues("duration"))?.label },
-                          { label: "Workers", value: form.getValues("workerCount") },
-                          { label: "Budget/Worker", value: watchAmount > 0 ? formatLocal(watchAmount) : "Flexible" },
-                          { label: "Total Cost", value: totalCost > 0 ? formatLocal(totalCost) : "Free" },
-                        ].map((item) => (
-                          <div key={item.label} className="flex justify-between py-2 border-b border-border last:border-0">
-                            <span className="text-muted-foreground text-sm">{item.label}</span>
-                            <span className="text-sm font-medium text-foreground">{item.value}</span>
+                      <motion.div key="s4" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-6">
+                        <h2 className="text-xl font-bold text-foreground">Review Your Task</h2>
+                        <div className="bg-muted rounded-xl p-6 space-y-4">
+                          <div><p className="text-xs text-muted-foreground uppercase">Title</p><p className="font-semibold text-foreground">{form.getValues("title")}</p></div>
+                          <div><p className="text-xs text-muted-foreground uppercase">Description</p><p className="text-sm text-foreground">{form.getValues("description")}</p></div>
+                          <div className="grid grid-cols-2 gap-4">
+                            <div><p className="text-xs text-muted-foreground uppercase">Category</p><p className="text-sm font-medium text-foreground">{CATEGORIES.find((c) => c.value === form.getValues("category"))?.label}</p></div>
+                            <div><p className="text-xs text-muted-foreground uppercase">Work Type</p><p className="text-sm font-medium text-foreground">{form.getValues("locationType") === "remote" ? "Remote" : "On-site"}</p></div>
+                            <div><p className="text-xs text-muted-foreground uppercase">Duration</p><p className="text-sm font-medium text-foreground">{DURATION_OPTIONS.find((d) => d.value === form.getValues("duration"))?.label}</p></div>
+                            <div><p className="text-xs text-muted-foreground uppercase">Workers</p><p className="text-sm font-medium text-foreground">{form.getValues("workerCount")}</p></div>
                           </div>
-                        ))}
-                        <div className="pt-4">
-                          <p className="text-sm text-muted-foreground mb-2">Description:</p>
-                          <p className="text-sm text-foreground bg-muted p-3 rounded-lg">{form.getValues("description")}</p>
+                          {totalCost > 0 && (
+                            <div className="bg-primary/10 border border-primary/20 rounded-lg p-4">
+                              <div className="flex justify-between items-center">
+                                <span className="font-semibold text-foreground">Total Cost</span>
+                                <span className="text-xl font-bold text-primary">{formatLocal(totalCost)}</span>
+                              </div>
+                              <p className="text-xs text-muted-foreground mt-1">This amount will be locked in escrow until the task is completed.</p>
+                            </div>
+                          )}
                         </div>
                       </motion.div>
                     )}
                   </AnimatePresence>
                 </div>
 
-                <div className="flex items-center justify-between px-8 py-5 bg-muted/50 border-t border-border">
+                <div className="border-t border-border p-6 flex justify-between">
                   {step > 1 ? (
-                    <Button type="button" variant="ghost" onClick={() => setStep((s) => s - 1)} className="gap-2">
+                    <Button type="button" variant="outline" onClick={() => setStep((s) => s - 1)} className="gap-2">
                       <ArrowLeft size={16} /> Back
                     </Button>
                   ) : <div />}
                   {step < totalSteps ? (
-                    <Button type="button" onClick={nextStep} className="gap-2 bg-primary text-primary-foreground">
-                      Continue <ArrowRight size={16} />
+                    <Button type="button" onClick={nextStep} className="gap-2">
+                      Next <ArrowRight size={16} />
                     </Button>
                   ) : (
-                    <Button type="submit" className="gap-2 bg-gradient-to-r from-primary to-accent text-primary-foreground" disabled={totalCost > 0 && availableBalance < totalCost}>
-                      <Check size={16} /> Post Task
+                    <Button type="submit" disabled={createTaskPending} className="gap-2 bg-gradient-to-r from-primary to-accent text-primary-foreground px-8">
+                      {createTaskPending ? <><Loader2 className="w-4 h-4 animate-spin" /> Posting...</> : <><Upload size={16} /> Post Task</>}
                     </Button>
                   )}
                 </div>
