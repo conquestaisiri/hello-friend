@@ -8,19 +8,19 @@ import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useWallet, type Transaction } from "@/hooks/use-wallet";
+import { useCryptoPrices } from "@/hooks/use-crypto-prices";
 import { useLocalizationStore } from "@/stores/localization-store";
 import { useFirebaseAuth } from "@/contexts/FirebaseAuthContext";
 import { useToast } from "@/hooks/use-toast";
 import {
   Wallet, ArrowUpRight, ArrowDownLeft, Clock, CheckCircle, XCircle,
   TrendingUp, Shield, CircleDollarSign, Coins, Eye, EyeOff,
-  Download, Upload, Filter, CreditCard, Building, Globe, Loader2, ExternalLink, Link2
+  Download, Upload, Filter, CreditCard, Building, Globe, Loader2, ExternalLink, Link2, RefreshCw
 } from "lucide-react";
 import { useState, useEffect, useCallback } from "react";
 import { cn } from "@/lib/utils";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 
-const NGN_TO_USDC_RATE = 1500;
 const WALLET_API = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/wallet-api`;
 
 function TransactionIcon({ type }: { type: string }) {
@@ -65,6 +65,7 @@ function WalletPageContent() {
   const { user, getIdToken } = useFirebaseAuth();
   const { formatLocal, currency } = useLocalizationStore();
   const { toast } = useToast();
+  const { usdcNgn, solNgn, solUsd, lastUpdated, isLoading: pricesLoading, refresh: refreshPrices } = useCryptoPrices();
 
   const [showAssets, setShowAssets] = useState(false);
   const [filter, setFilter] = useState("all");
@@ -91,7 +92,8 @@ function WalletPageContent() {
   const [phantomAvailable, setPhantomAvailable] = useState(false);
 
   const totalBalance = availableBalance + escrowBalance;
-  const usdcEquivalent = (availableBalance / NGN_TO_USDC_RATE).toFixed(2);
+  const usdcEquivalent = usdcNgn > 0 ? (availableBalance / usdcNgn).toFixed(2) : "0.00";
+  const solEquivalent = solNgn > 0 ? (availableBalance / solNgn).toFixed(6) : "0.000000";
   const filteredTransactions = filter === "all" ? transactions : transactions.filter((t) => t.type === filter);
 
   // Check for Phantom on mount
@@ -319,7 +321,16 @@ function WalletPageContent() {
 
           <Card>
             <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2"><Coins size={16} /> Asset Breakdown</CardTitle>
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2"><Coins size={16} /> Asset Breakdown</CardTitle>
+                <button
+                  onClick={refreshPrices}
+                  className="text-muted-foreground hover:text-foreground transition-colors"
+                  title="Refresh prices"
+                >
+                  <RefreshCw size={14} className={pricesLoading ? "animate-spin" : ""} />
+                </button>
+              </div>
             </CardHeader>
             <CardContent className="space-y-3">
               {showAssets ? (
@@ -329,17 +340,30 @@ function WalletPageContent() {
                     <span className="text-sm font-semibold">{formatLocal(availableBalance)}</span>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-sm text-muted-foreground">USDC (equiv.)</span>
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-sm text-muted-foreground">USDC</span>
+                      <span className="text-[10px] text-muted-foreground/60">1 USDC = ₦{usdcNgn.toLocaleString()}</span>
+                    </div>
                     <span className="text-sm font-semibold">${usdcEquivalent}</span>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-sm text-muted-foreground">SOL</span>
-                    <span className="text-sm font-semibold text-muted-foreground">0.00</span>
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-sm text-muted-foreground">SOL</span>
+                      <span className="text-[10px] text-muted-foreground/60">1 SOL = ₦{solNgn.toLocaleString()}</span>
+                    </div>
+                    <span className="text-sm font-semibold">{solEquivalent}</span>
                   </div>
                   <div className="h-px bg-border my-2" />
-                  <p className="text-xs text-muted-foreground">
-                    USDC is the internal unit of account. Fiat values are displayed for convenience.
-                  </p>
+                  <div className="flex items-center justify-between">
+                    <p className="text-xs text-muted-foreground">
+                      Live rates · Auto-refreshes every 30s
+                    </p>
+                    {lastUpdated && (
+                      <p className="text-[10px] text-muted-foreground/60">
+                        {lastUpdated.toLocaleTimeString()}
+                      </p>
+                    )}
+                  </div>
                 </>
               ) : (
                 <div className="text-center py-4">
