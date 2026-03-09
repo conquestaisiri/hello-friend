@@ -461,10 +461,11 @@ function WalletPageContent() {
           <div className="space-y-4 py-4">
             <div>
               <Label>Payment Method</Label>
-              <div className="grid grid-cols-2 gap-3 mt-2">
+              <div className="grid grid-cols-3 gap-3 mt-2">
                 {[
                   { value: "card", label: "Debit/Credit Card", icon: CreditCard },
                   { value: "bank", label: "Bank Transfer", icon: Building },
+                  { value: "crypto", label: "Crypto (USDC)", icon: Globe },
                 ].map((m) => (
                   <div key={m.value}
                     className={cn(
@@ -473,39 +474,74 @@ function WalletPageContent() {
                     )}
                     onClick={() => setDepositMethod(m.value)}>
                     <m.icon className={cn("w-6 h-6 mx-auto mb-2", depositMethod === m.value ? "text-primary" : "text-muted-foreground")} />
-                    <p className="text-sm font-medium">{m.label}</p>
+                    <p className="text-xs font-medium">{m.label}</p>
                   </div>
                 ))}
               </div>
             </div>
-            <div>
-              <Label>Amount ({currency.symbol})</Label>
-              <div className="relative mt-2">
-                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-xl font-mono text-muted-foreground">{currency.symbol}</span>
-                <Input type="number" value={depositAmount} onChange={(e) => setDepositAmount(e.target.value)} placeholder="0" className="h-14 text-xl font-mono pl-10" min="100" />
+
+            {depositMethod === "crypto" ? (
+              <div className="space-y-4">
+                <div className="bg-accent/5 border border-accent/20 rounded-xl p-4 space-y-3">
+                  <h4 className="text-sm font-semibold text-foreground flex items-center gap-2">
+                    <Globe className="w-4 h-4 text-accent" /> Send USDC on Solana
+                  </h4>
+                  <p className="text-xs text-muted-foreground">
+                    Send <strong>USDC (SPL)</strong> on the <strong>Solana</strong> network to the address below. Deposits are confirmed within 5 minutes after on-chain verification.
+                  </p>
+                  <div className="bg-muted rounded-lg p-3">
+                    <Label className="text-xs text-muted-foreground mb-1 block">Treasury Address</Label>
+                    <div className="flex items-center gap-2">
+                      <code className="text-xs font-mono text-foreground break-all flex-1 select-all">
+                        Coming Soon — Treasury wallet not yet configured
+                      </code>
+                    </div>
+                  </div>
+                  <div className="text-xs text-muted-foreground space-y-1">
+                    <p>• Only send <strong>USDC</strong> on <strong>Solana</strong>. Other tokens will be lost.</p>
+                    <p>• Minimum deposit: <strong>1 USDC</strong></p>
+                    <p>• Your wallet will be credited automatically after confirmation.</p>
+                  </div>
+                </div>
+                <div className="bg-amber-50 dark:bg-amber-900/20 p-3 rounded-lg border border-amber-200 dark:border-amber-800">
+                  <p className="text-xs text-amber-700 dark:text-amber-400 flex items-center gap-2">
+                    <Shield className="w-4 h-4" />
+                    Crypto deposits are verified on-chain for maximum security
+                  </p>
+                </div>
               </div>
-              <div className="flex justify-between text-xs text-muted-foreground mt-1">
-                <span>Minimum: ₦100</span>
-                <span>Current Balance: {formatLocal(availableBalance)}</span>
-              </div>
-            </div>
-            <div className="flex gap-2">
-              {[1000, 5000, 10000, 25000].map((q) => (
-                <Button key={q} type="button" variant="outline" size="sm" className="flex-1 text-xs" onClick={() => setDepositAmount(q.toString())}>
-                  {currency.symbol}{(q / 1000)}k
-                </Button>
-              ))}
-            </div>
-            <div className="bg-green-50 dark:bg-green-900/20 p-3 rounded-lg border border-green-200 dark:border-green-800">
-              <p className="text-xs text-green-700 dark:text-green-400 flex items-center gap-2">
-                <Shield className="w-4 h-4" />
-                Secured by Paystack — Nigeria's leading payment processor
-              </p>
-            </div>
+            ) : (
+              <>
+                <div>
+                  <Label>Amount ({currency.symbol})</Label>
+                  <div className="relative mt-2">
+                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-xl font-mono text-muted-foreground">{currency.symbol}</span>
+                    <Input type="number" value={depositAmount} onChange={(e) => setDepositAmount(e.target.value)} placeholder="0" className="h-14 text-xl font-mono pl-10" min="100" />
+                  </div>
+                  <div className="flex justify-between text-xs text-muted-foreground mt-1">
+                    <span>Minimum: ₦100</span>
+                    <span>Current Balance: {formatLocal(availableBalance)}</span>
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  {[1000, 5000, 10000, 25000].map((q) => (
+                    <Button key={q} type="button" variant="outline" size="sm" className="flex-1 text-xs" onClick={() => setDepositAmount(q.toString())}>
+                      {currency.symbol}{(q / 1000)}k
+                    </Button>
+                  ))}
+                </div>
+                <div className="bg-green-50 dark:bg-green-900/20 p-3 rounded-lg border border-green-200 dark:border-green-800">
+                  <p className="text-xs text-green-700 dark:text-green-400 flex items-center gap-2">
+                    <Shield className="w-4 h-4" />
+                    Secured by Paystack — Nigeria's leading payment processor
+                  </p>
+                </div>
+              </>
+            )}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setDepositOpen(false)}>Cancel</Button>
-            <Button onClick={handleDeposit} disabled={parseFloat(depositAmount) < 100 || depositPending} className="shadow-lg shadow-primary/20">
+            <Button onClick={handleDeposit} disabled={depositMethod === "crypto" || parseFloat(depositAmount) < 100 || depositPending} className="shadow-lg shadow-primary/20">
               {depositPending ? (
                 <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Processing...</>
               ) : (

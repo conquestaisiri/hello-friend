@@ -150,12 +150,7 @@ export function Navbar({ variant = 'default' }: NavbarProps) {
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
               >
-                <div className="relative">
-                  <div className="h-8 w-8 bg-gradient-to-br from-primary to-accent rounded-lg flex items-center justify-center text-primary-foreground font-bold shadow-md shadow-primary/25 group-hover:shadow-primary/40 transition-shadow">
-                    <Sparkles size={18} />
-                  </div>
-                  <div className="absolute -inset-0.5 bg-gradient-to-br from-primary to-accent rounded-lg blur opacity-30 group-hover:opacity-50 transition-opacity -z-10" />
-                </div>
+                <img src="/images/helpchain-logo.png" alt="HelpChain" className="h-9 w-9 rounded-lg object-contain" />
                 <span className={cn(
                   "text-lg font-bold tracking-tight transition-colors duration-300",
                   shouldBeTransparent ? "text-white" : "text-foreground"
@@ -400,9 +395,7 @@ export function Navbar({ variant = 'default' }: NavbarProps) {
                   {/* Header */}
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <div className="h-9 w-9 bg-gradient-to-br from-primary to-accent rounded-xl flex items-center justify-center text-primary-foreground">
-                        <Sparkles size={18} />
-                      </div>
+                      <img src="/images/helpchain-logo.png" alt="HelpChain" className="h-9 w-9 rounded-xl object-contain" />
                       <span className="text-lg font-bold text-foreground">HelpChain</span>
                     </div>
                     <Button 
