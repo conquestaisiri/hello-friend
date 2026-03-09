@@ -129,9 +129,6 @@ export default function Home() {
         <div className="absolute inset-0">
           <img src="/images/hero-background.png" alt="Diverse professionals collaborating" className="w-full h-full object-cover" />
           <div className="absolute inset-0 bg-gradient-to-b from-black/75 via-black/60 to-black/80" />
-          {/* Decorative orbs */}
-          <div className="absolute top-1/4 left-10 w-72 h-72 bg-accent/20 rounded-full blur-[100px] animate-pulse-slow" />
-          <div className="absolute bottom-1/4 right-10 w-96 h-96 bg-secondary/20 rounded-full blur-[120px] animate-pulse-slow" />
         </div>
 
         <div className="container mx-auto px-4 md:px-8 relative z-10 pt-32 md:pt-40 pb-20">
@@ -145,7 +142,7 @@ export default function Home() {
               <h1 className="text-3xl sm:text-4xl md:text-6xl lg:text-7xl font-bold text-white leading-[1.05] mb-6 md:mb-8 font-heading">
                 Get Help With Anything.
                 <br />
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-accent via-green-300 to-accent">
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-white via-white/90 to-white">
                   Anytime. Anywhere.
                 </span>
               </h1>

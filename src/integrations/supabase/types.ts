@@ -14,7 +14,81 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          base_currency: string | null
+          bio: string | null
+          country: string | null
+          created_at: string
+          email: string
+          full_name: string
+          helps_given: number | null
+          helps_received: number | null
+          id: string
+          is_featured: boolean | null
+          location: string | null
+          on_time_rate: number | null
+          rating: number | null
+          rating_count: number | null
+          reputation_score: number | null
+          response_time: string | null
+          skills: string[] | null
+          success_rate: number | null
+          updated_at: string
+          user_id: string
+          verification_tier: number | null
+        }
+        Insert: {
+          avatar_url?: string | null
+          base_currency?: string | null
+          bio?: string | null
+          country?: string | null
+          created_at?: string
+          email: string
+          full_name: string
+          helps_given?: number | null
+          helps_received?: number | null
+          id?: string
+          is_featured?: boolean | null
+          location?: string | null
+          on_time_rate?: number | null
+          rating?: number | null
+          rating_count?: number | null
+          reputation_score?: number | null
+          response_time?: string | null
+          skills?: string[] | null
+          success_rate?: number | null
+          updated_at?: string
+          user_id: string
+          verification_tier?: number | null
+        }
+        Update: {
+          avatar_url?: string | null
+          base_currency?: string | null
+          bio?: string | null
+          country?: string | null
+          created_at?: string
+          email?: string
+          full_name?: string
+          helps_given?: number | null
+          helps_received?: number | null
+          id?: string
+          is_featured?: boolean | null
+          location?: string | null
+          on_time_rate?: number | null
+          rating?: number | null
+          rating_count?: number | null
+          reputation_score?: number | null
+          response_time?: string | null
+          skills?: string[] | null
+          success_rate?: number | null
+          updated_at?: string
+          user_id?: string
+          verification_tier?: number | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
