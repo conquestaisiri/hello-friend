@@ -108,6 +108,8 @@ export default function AuthPage() {
   const handleGoogleSignIn = async () => {
     try {
       await signInWithGoogle();
+      // Send welcome notification for first-time Google sign-in
+      setTimeout(() => sendWelcomeNotification(user?.displayName || undefined), 2000);
       toast({
         title: "Welcome!",
         description: "You have successfully signed in with Google.",
