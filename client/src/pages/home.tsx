@@ -142,7 +142,7 @@ export default function Home() {
               <h1 className="text-3xl sm:text-4xl md:text-6xl lg:text-7xl font-bold text-white leading-[1.05] mb-6 md:mb-8 font-heading">
                 Get Help With Anything.
                 <br />
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-white via-white/90 to-white">
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-accent via-green-300 to-accent">
                   Anytime. Anywhere.
                 </span>
               </h1>
