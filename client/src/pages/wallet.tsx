@@ -12,6 +12,7 @@ import { useCryptoPrices } from "@/hooks/use-crypto-prices";
 import { useLocalizationStore } from "@/stores/localization-store";
 import { useFirebaseAuth } from "@/contexts/FirebaseAuthContext";
 import { useToast } from "@/hooks/use-toast";
+import { PhantomIcon } from "@/components/ui/phantom-icon";
 import {
   Wallet, ArrowUpRight, ArrowDownLeft, Clock, CheckCircle, XCircle,
   TrendingUp, Shield, CircleDollarSign, Coins, Eye, EyeOff,
@@ -22,6 +23,7 @@ import { cn } from "@/lib/utils";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 
 const WALLET_API = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/wallet-api`;
+const CRYPTO_DEPOSIT_FEE_PERCENT = 5;
 
 function TransactionIcon({ type }: { type: string }) {
   switch (type) {
@@ -68,6 +70,7 @@ function WalletPageContent() {
   const { usdcNgn, solNgn, solUsd, lastUpdated, isLoading: pricesLoading, refresh: refreshPrices } = useCryptoPrices();
 
   const [showAssets, setShowAssets] = useState(false);
+  const [hideBalance, setHideBalance] = useState(false);
   const [filter, setFilter] = useState("all");
   const [depositOpen, setDepositOpen] = useState(false);
   const [withdrawOpen, setWithdrawOpen] = useState(false);
@@ -77,6 +80,10 @@ function WalletPageContent() {
   const [withdrawMethod, setWithdrawMethod] = useState("bank");
   const [cryptoAddress, setCryptoAddress] = useState("");
   const [verifyingPayment, setVerifyingPayment] = useState(false);
+
+  // Crypto deposit from connected wallet
+  const [cryptoDepositAmount, setCryptoDepositAmount] = useState("");
+  const [cryptoDepositAsset, setCryptoDepositAsset] = useState<"usdc" | "sol">("usdc");
 
   // Bank withdrawal fields
   const [banks, setBanks] = useState<{ name: string; code: string }[]>([]);
@@ -90,21 +97,65 @@ function WalletPageContent() {
   const [phantomConnected, setPhantomConnected] = useState(false);
   const [phantomAddress, setPhantomAddress] = useState("");
   const [phantomAvailable, setPhantomAvailable] = useState(false);
+  const [phantomSolBalance, setPhantomSolBalance] = useState(0);
+  const [phantomUsdcBalance, setPhantomUsdcBalance] = useState(0);
+  const [phantomBalancesLoading, setPhantomBalancesLoading] = useState(false);
 
   const totalBalance = availableBalance + escrowBalance;
   const usdcEquivalent = usdcNgn > 0 ? (availableBalance / usdcNgn).toFixed(2) : "0.00";
   const solEquivalent = solNgn > 0 ? (availableBalance / solNgn).toFixed(6) : "0.000000";
   const filteredTransactions = filter === "all" ? transactions : transactions.filter((t) => t.type === filter);
 
+  const masked = "••••••";
+
+  // Fetch Phantom wallet balances
+  const fetchPhantomBalances = useCallback(async (pubKey: string) => {
+    setPhantomBalancesLoading(true);
+    try {
+      // SOL balance
+      const solRes = await fetch("https://api.mainnet-beta.solana.com", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "getBalance", params: [pubKey] }),
+      });
+      const solData = await solRes.json();
+      setPhantomSolBalance((solData.result?.value || 0) / 1e9);
+
+      // USDC balance (SPL Token)
+      const USDC_MINT = "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v";
+      const tokenRes = await fetch("https://api.mainnet-beta.solana.com", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          jsonrpc: "2.0", id: 2, method: "getTokenAccountsByOwner",
+          params: [pubKey, { mint: USDC_MINT }, { encoding: "jsonParsed" }],
+        }),
+      });
+      const tokenData = await tokenRes.json();
+      const usdcAccounts = tokenData.result?.value || [];
+      let usdcTotal = 0;
+      for (const acc of usdcAccounts) {
+        usdcTotal += acc.account?.data?.parsed?.info?.tokenAmount?.uiAmount || 0;
+      }
+      setPhantomUsdcBalance(usdcTotal);
+    } catch (err) {
+      console.error("Failed to fetch phantom balances:", err);
+    } finally {
+      setPhantomBalancesLoading(false);
+    }
+  }, []);
+
   // Check for Phantom on mount
   useEffect(() => {
     const provider = getPhantomProvider();
     setPhantomAvailable(!!provider);
     if (provider?.isConnected && provider.publicKey) {
+      const pubKey = provider.publicKey.toString();
       setPhantomConnected(true);
-      setPhantomAddress(provider.publicKey.toString());
+      setPhantomAddress(pubKey);
+      fetchPhantomBalances(pubKey);
     }
-  }, []);
+  }, [fetchPhantomBalances]);
 
   // Load banks when withdrawal opens with bank method
   useEffect(() => {
@@ -172,10 +223,12 @@ function WalletPageContent() {
     }
     try {
       const resp = await provider.connect();
+      const pubKey = resp.publicKey.toString();
       setPhantomConnected(true);
-      setPhantomAddress(resp.publicKey.toString());
-      setCryptoAddress(resp.publicKey.toString());
-      toast({ title: "Wallet Connected", description: `Connected to ${resp.publicKey.toString().slice(0, 8)}...` });
+      setPhantomAddress(pubKey);
+      setCryptoAddress(pubKey);
+      fetchPhantomBalances(pubKey);
+      toast({ title: "Wallet Connected", description: `Connected to ${pubKey.slice(0, 8)}...` });
     } catch (err: any) {
       toast({ title: "Connection failed", description: err.message, variant: "destructive" });
     }
@@ -189,6 +242,8 @@ function WalletPageContent() {
     setPhantomConnected(false);
     setPhantomAddress("");
     setCryptoAddress("");
+    setPhantomSolBalance(0);
+    setPhantomUsdcBalance(0);
   };
 
   // Handle Paystack redirect callback
@@ -228,6 +283,31 @@ function WalletPageContent() {
     } catch (err: any) {
       toast({ title: "Deposit failed", description: err.message || "Unable to start payment.", variant: "destructive" });
     }
+  };
+
+  const handleCryptoDeposit = async () => {
+    const amt = parseFloat(cryptoDepositAmount);
+    if (!amt || amt <= 0) {
+      toast({ title: "Invalid amount", variant: "destructive" });
+      return;
+    }
+    const maxBal = cryptoDepositAsset === "usdc" ? phantomUsdcBalance : phantomSolBalance;
+    if (amt > maxBal) {
+      toast({ title: "Insufficient balance", description: `You only have ${maxBal} ${cryptoDepositAsset.toUpperCase()} in your wallet.`, variant: "destructive" });
+      return;
+    }
+
+    // Calculate fees
+    const fee = amt * (CRYPTO_DEPOSIT_FEE_PERCENT / 100);
+    const netAmount = amt - fee;
+    const ngnValue = cryptoDepositAsset === "usdc" ? netAmount * usdcNgn : netAmount * solNgn;
+
+    toast({
+      title: "Crypto Deposit",
+      description: `Sending ${amt} ${cryptoDepositAsset.toUpperCase()} (Fee: ${fee.toFixed(4)}, Net: ${netAmount.toFixed(4)} ≈ ₦${ngnValue.toLocaleString(undefined, { maximumFractionDigits: 0 })}).\n\nThis feature requires on-chain signing integration — coming soon!`,
+    });
+
+    setCryptoDepositAmount("");
   };
 
   const handleWithdraw = async () => {
@@ -303,18 +383,18 @@ function WalletPageContent() {
             <CardContent className="p-6">
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2 text-primary-foreground/80 text-sm font-medium"><Wallet size={18} /> Total Balance</div>
-                <button onClick={() => setShowAssets(!showAssets)} className="text-primary-foreground/70 hover:text-primary-foreground transition-colors">
-                  {showAssets ? <EyeOff size={18} /> : <Eye size={18} />}
+                <button onClick={() => setHideBalance(!hideBalance)} className="text-primary-foreground/70 hover:text-primary-foreground transition-colors" title={hideBalance ? "Show balance" : "Hide balance"}>
+                  {hideBalance ? <EyeOff size={18} /> : <Eye size={18} />}
                 </button>
               </div>
               {isLoading ? (
                 <div className="h-12 flex items-center"><Loader2 className="w-6 h-6 animate-spin text-primary-foreground/60" /></div>
               ) : (
-                <p className="text-4xl font-bold tracking-tight">{formatLocal(totalBalance)}</p>
+                <p className="text-4xl font-bold tracking-tight">{hideBalance ? masked : formatLocal(totalBalance)}</p>
               )}
               <div className="flex gap-6 mt-4 text-sm">
-                <div><span className="text-primary-foreground/70">Available</span><p className="font-semibold">{formatLocal(availableBalance)}</p></div>
-                <div><span className="text-primary-foreground/70">In Escrow</span><p className="font-semibold">{formatLocal(escrowBalance)}</p></div>
+                <div><span className="text-primary-foreground/70">Available</span><p className="font-semibold">{hideBalance ? masked : formatLocal(availableBalance)}</p></div>
+                <div><span className="text-primary-foreground/70">In Escrow</span><p className="font-semibold">{hideBalance ? masked : formatLocal(escrowBalance)}</p></div>
               </div>
             </CardContent>
           </Card>
@@ -323,13 +403,14 @@ function WalletPageContent() {
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
                 <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2"><Coins size={16} /> Asset Breakdown</CardTitle>
-                <button
-                  onClick={refreshPrices}
-                  className="text-muted-foreground hover:text-foreground transition-colors"
-                  title="Refresh prices"
-                >
-                  <RefreshCw size={14} className={pricesLoading ? "animate-spin" : ""} />
-                </button>
+                <div className="flex items-center gap-1">
+                  <button onClick={() => setShowAssets(!showAssets)} className="text-muted-foreground hover:text-foreground transition-colors" title={showAssets ? "Collapse" : "Expand"}>
+                    {showAssets ? <EyeOff size={14} /> : <Eye size={14} />}
+                  </button>
+                  <button onClick={refreshPrices} className="text-muted-foreground hover:text-foreground transition-colors" title="Refresh prices">
+                    <RefreshCw size={14} className={pricesLoading ? "animate-spin" : ""} />
+                  </button>
+                </div>
               </div>
             </CardHeader>
             <CardContent className="space-y-3">
@@ -337,32 +418,26 @@ function WalletPageContent() {
                 <>
                   <div className="flex items-center justify-between">
                     <span className="text-sm text-muted-foreground">{currency.code}</span>
-                    <span className="text-sm font-semibold">{formatLocal(availableBalance)}</span>
+                    <span className="text-sm font-semibold">{hideBalance ? masked : formatLocal(availableBalance)}</span>
                   </div>
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-1.5">
                       <span className="text-sm text-muted-foreground">USDC</span>
                       <span className="text-[10px] text-muted-foreground/60">1 USDC = ₦{usdcNgn.toLocaleString()}</span>
                     </div>
-                    <span className="text-sm font-semibold">${usdcEquivalent}</span>
+                    <span className="text-sm font-semibold">{hideBalance ? masked : `$${usdcEquivalent}`}</span>
                   </div>
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-1.5">
                       <span className="text-sm text-muted-foreground">SOL</span>
                       <span className="text-[10px] text-muted-foreground/60">1 SOL = ₦{solNgn.toLocaleString()}</span>
                     </div>
-                    <span className="text-sm font-semibold">{solEquivalent}</span>
+                    <span className="text-sm font-semibold">{hideBalance ? masked : solEquivalent}</span>
                   </div>
                   <div className="h-px bg-border my-2" />
                   <div className="flex items-center justify-between">
-                    <p className="text-xs text-muted-foreground">
-                      Live rates · Auto-refreshes every 30s
-                    </p>
-                    {lastUpdated && (
-                      <p className="text-[10px] text-muted-foreground/60">
-                        {lastUpdated.toLocaleTimeString()}
-                      </p>
-                    )}
+                    <p className="text-xs text-muted-foreground">Live rates · Auto-refreshes every 30s</p>
+                    {lastUpdated && <p className="text-[10px] text-muted-foreground/60">{lastUpdated.toLocaleTimeString()}</p>}
                   </div>
                 </>
               ) : (
@@ -396,14 +471,50 @@ function WalletPageContent() {
                     </div>
                   ) : (
                     <Button size="sm" variant="outline" className="text-xs h-8 gap-1.5" onClick={connectPhantom}>
-                      <img src="https://phantom.app/img/phantom-icon-purple.svg" alt="" className="w-4 h-4" />
+                      <PhantomIcon className="w-4 h-4" />
                       {phantomAvailable ? "Connect Phantom" : "Install Phantom"}
                     </Button>
                   )}
                 </div>
                 <p className="text-sm text-muted-foreground mb-3">
-                  HelpChain uses <strong>USDC on Solana</strong> as the internal ledger. Connect your Phantom wallet for crypto withdrawals.
+                  HelpChain uses <strong>USDC on Solana</strong> as the internal ledger. Connect your Phantom wallet for crypto deposits & withdrawals.
                 </p>
+
+                {/* Connected wallet balances */}
+                {phantomConnected && (
+                  <div className="bg-muted/50 rounded-xl p-4 mb-3 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <h4 className="text-sm font-medium text-foreground flex items-center gap-2">
+                        <PhantomIcon className="w-4 h-4" /> Connected Wallet Assets
+                      </h4>
+                      <button onClick={() => fetchPhantomBalances(phantomAddress)} className="text-muted-foreground hover:text-foreground">
+                        <RefreshCw size={12} className={phantomBalancesLoading ? "animate-spin" : ""} />
+                      </button>
+                    </div>
+                    {phantomBalancesLoading ? (
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <Loader2 className="w-3 h-3 animate-spin" /> Loading balances...
+                      </div>
+                    ) : (
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="bg-background rounded-lg p-3 border">
+                          <p className="text-xs text-muted-foreground">SOL</p>
+                          <p className="text-lg font-bold text-foreground">{hideBalance ? masked : phantomSolBalance.toFixed(4)}</p>
+                          <p className="text-[10px] text-muted-foreground">≈ {hideBalance ? masked : `₦${(phantomSolBalance * solNgn).toLocaleString(undefined, { maximumFractionDigits: 0 })}`}</p>
+                        </div>
+                        <div className="bg-background rounded-lg p-3 border">
+                          <p className="text-xs text-muted-foreground">USDC</p>
+                          <p className="text-lg font-bold text-foreground">{hideBalance ? masked : phantomUsdcBalance.toFixed(2)}</p>
+                          <p className="text-[10px] text-muted-foreground">≈ {hideBalance ? masked : `₦${(phantomUsdcBalance * usdcNgn).toLocaleString(undefined, { maximumFractionDigits: 0 })}`}</p>
+                        </div>
+                      </div>
+                    )}
+                    <p className="text-[10px] text-muted-foreground">
+                      {CRYPTO_DEPOSIT_FEE_PERCENT}% platform fee on crypto deposits
+                    </p>
+                  </div>
+                )}
+
                 <div className="flex flex-wrap gap-2">
                   <Badge variant="secondary" className="text-xs">USDC Ledger ✓</Badge>
                   <Badge variant="secondary" className="text-xs">Solana Network ✓</Badge>
@@ -457,7 +568,7 @@ function WalletPageContent() {
                     </div>
                     <div className="flex items-center gap-3">
                       <span className={cn("text-sm font-semibold", ["deposit", "escrow_refund", "earning"].includes(tx.type) ? "text-chart-2" : "text-foreground")}>
-                        {["deposit", "escrow_refund", "earning"].includes(tx.type) ? "+" : "-"}{formatLocal(tx.amount)}
+                        {["deposit", "escrow_refund", "earning"].includes(tx.type) ? "+" : "-"}{hideBalance ? masked : formatLocal(tx.amount)}
                       </span>
                       <StatusBadge status={tx.status} />
                     </div>
@@ -480,7 +591,7 @@ function WalletPageContent() {
               </span>
               Fund Your Wallet
             </DialogTitle>
-            <DialogDescription>Add funds securely via Paystack (Card, Bank Transfer, USSD)</DialogDescription>
+            <DialogDescription>Add funds via Paystack or connected crypto wallet</DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div>
@@ -489,7 +600,7 @@ function WalletPageContent() {
                 {[
                   { value: "card", label: "Debit/Credit Card", icon: CreditCard },
                   { value: "bank", label: "Bank Transfer", icon: Building },
-                  { value: "crypto", label: "Crypto (USDC)", icon: Globe },
+                  { value: "crypto", label: "Crypto Wallet", icon: Globe },
                 ].map((m) => (
                   <div key={m.value}
                     className={cn(
@@ -506,33 +617,122 @@ function WalletPageContent() {
 
             {depositMethod === "crypto" ? (
               <div className="space-y-4">
-                <div className="bg-accent/5 border border-accent/20 rounded-xl p-4 space-y-3">
-                  <h4 className="text-sm font-semibold text-foreground flex items-center gap-2">
-                    <Globe className="w-4 h-4 text-accent" /> Send USDC on Solana
-                  </h4>
-                  <p className="text-xs text-muted-foreground">
-                    Send <strong>USDC (SPL)</strong> on the <strong>Solana</strong> network to the address below. Deposits are confirmed within 5 minutes after on-chain verification.
-                  </p>
-                  <div className="bg-muted rounded-lg p-3">
-                    <Label className="text-xs text-muted-foreground mb-1 block">Treasury Address</Label>
-                    <div className="flex items-center gap-2">
-                      <code className="text-xs font-mono text-foreground break-all flex-1 select-all">
-                        Coming Soon — Treasury wallet not yet configured
-                      </code>
+                {phantomConnected ? (
+                  <>
+                    {/* Connected wallet info */}
+                    <div className="bg-accent/5 border border-accent/20 rounded-xl p-4 space-y-3">
+                      <div className="flex items-center justify-between">
+                        <h4 className="text-sm font-semibold text-foreground flex items-center gap-2">
+                          <PhantomIcon className="w-4 h-4" /> Deposit from Phantom
+                        </h4>
+                        <Badge variant="default" className="text-xs">Connected</Badge>
+                      </div>
+
+                      {/* Wallet balances */}
+                      <div className="grid grid-cols-2 gap-2">
+                        <div
+                          className={cn(
+                            "rounded-lg p-3 border cursor-pointer transition-all",
+                            cryptoDepositAsset === "usdc" ? "border-primary bg-primary/5" : "border-border"
+                          )}
+                          onClick={() => setCryptoDepositAsset("usdc")}
+                        >
+                          <p className="text-xs text-muted-foreground">USDC</p>
+                          <p className="text-sm font-bold">{phantomUsdcBalance.toFixed(2)}</p>
+                          <p className="text-[10px] text-muted-foreground">≈ ₦{(phantomUsdcBalance * usdcNgn).toLocaleString(undefined, { maximumFractionDigits: 0 })}</p>
+                        </div>
+                        <div
+                          className={cn(
+                            "rounded-lg p-3 border cursor-pointer transition-all",
+                            cryptoDepositAsset === "sol" ? "border-primary bg-primary/5" : "border-border"
+                          )}
+                          onClick={() => setCryptoDepositAsset("sol")}
+                        >
+                          <p className="text-xs text-muted-foreground">SOL</p>
+                          <p className="text-sm font-bold">{phantomSolBalance.toFixed(4)}</p>
+                          <p className="text-[10px] text-muted-foreground">≈ ₦{(phantomSolBalance * solNgn).toLocaleString(undefined, { maximumFractionDigits: 0 })}</p>
+                        </div>
+                      </div>
+
+                      {/* Amount input */}
+                      <div>
+                        <Label className="text-xs">Amount ({cryptoDepositAsset.toUpperCase()})</Label>
+                        <Input
+                          type="number"
+                          value={cryptoDepositAmount}
+                          onChange={(e) => setCryptoDepositAmount(e.target.value)}
+                          placeholder={`0.00 ${cryptoDepositAsset.toUpperCase()}`}
+                          className="mt-1 h-12 font-mono"
+                          step="0.01"
+                        />
+                        <div className="flex justify-between text-[10px] text-muted-foreground mt-1">
+                          <span>Max: {cryptoDepositAsset === "usdc" ? phantomUsdcBalance.toFixed(2) : phantomSolBalance.toFixed(4)}</span>
+                          <button
+                            className="text-primary underline"
+                            onClick={() => setCryptoDepositAmount(cryptoDepositAsset === "usdc" ? phantomUsdcBalance.toFixed(2) : phantomSolBalance.toFixed(4))}
+                          >
+                            Use Max
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Fee breakdown */}
+                      {parseFloat(cryptoDepositAmount) > 0 && (
+                        <div className="bg-muted rounded-lg p-3 space-y-1.5 text-xs">
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">Deposit Amount</span>
+                            <span className="font-medium">{parseFloat(cryptoDepositAmount).toFixed(4)} {cryptoDepositAsset.toUpperCase()}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">Platform Fee ({CRYPTO_DEPOSIT_FEE_PERCENT}%)</span>
+                            <span className="font-medium text-destructive">-{(parseFloat(cryptoDepositAmount) * CRYPTO_DEPOSIT_FEE_PERCENT / 100).toFixed(4)}</span>
+                          </div>
+                          <div className="h-px bg-border" />
+                          <div className="flex justify-between font-semibold">
+                            <span>Net Credit</span>
+                            <span className="text-chart-2">
+                              {(parseFloat(cryptoDepositAmount) * (1 - CRYPTO_DEPOSIT_FEE_PERCENT / 100)).toFixed(4)} {cryptoDepositAsset.toUpperCase()}
+                            </span>
+                          </div>
+                          <div className="flex justify-between text-muted-foreground">
+                            <span>NGN Equivalent</span>
+                            <span>
+                              ≈ ₦{(
+                                parseFloat(cryptoDepositAmount) * (1 - CRYPTO_DEPOSIT_FEE_PERCENT / 100) *
+                                (cryptoDepositAsset === "usdc" ? usdcNgn : solNgn)
+                              ).toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                            </span>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="bg-amber-50 dark:bg-amber-900/20 p-3 rounded-lg border border-amber-200 dark:border-amber-800">
+                      <p className="text-xs text-amber-700 dark:text-amber-400 flex items-center gap-2">
+                        <Shield className="w-4 h-4" />
+                        Blockchain transaction confirmation required
+                      </p>
+                    </div>
+                  </>
+                ) : (
+                  <div className="space-y-4">
+                    <div className="text-center py-6 bg-muted/30 rounded-xl border border-dashed">
+                      <PhantomIcon className="w-10 h-10 mx-auto mb-3" />
+                      <p className="text-sm font-medium text-foreground mb-1">Connect your wallet to deposit crypto</p>
+                      <p className="text-xs text-muted-foreground mb-4">Link your Phantom wallet to deposit USDC or SOL directly</p>
+                      <Button variant="outline" className="gap-2" onClick={connectPhantom}>
+                        <PhantomIcon className="w-4 h-4" />
+                        {phantomAvailable ? "Connect Phantom Wallet" : "Install Phantom Wallet"}
+                      </Button>
+                    </div>
+                    <div className="bg-amber-50 dark:bg-amber-900/20 p-3 rounded-lg border border-amber-200 dark:border-amber-800">
+                      <p className="text-xs text-amber-700 dark:text-amber-400 flex items-center gap-2">
+                        <Shield className="w-4 h-4" />
+                        {CRYPTO_DEPOSIT_FEE_PERCENT}% platform fee applies to all crypto deposits
+                      </p>
                     </div>
                   </div>
-                  <div className="text-xs text-muted-foreground space-y-1">
-                    <p>• Only send <strong>USDC</strong> on <strong>Solana</strong>. Other tokens will be lost.</p>
-                    <p>• Minimum deposit: <strong>1 USDC</strong></p>
-                    <p>• Your wallet will be credited automatically after confirmation.</p>
-                  </div>
-                </div>
-                <div className="bg-amber-50 dark:bg-amber-900/20 p-3 rounded-lg border border-amber-200 dark:border-amber-800">
-                  <p className="text-xs text-amber-700 dark:text-amber-400 flex items-center gap-2">
-                    <Shield className="w-4 h-4" />
-                    Crypto deposits are verified on-chain for maximum security
-                  </p>
-                </div>
+                )}
               </div>
             ) : (
               <>
@@ -565,13 +765,23 @@ function WalletPageContent() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setDepositOpen(false)}>Cancel</Button>
-            <Button onClick={handleDeposit} disabled={depositMethod === "crypto" || parseFloat(depositAmount) < 100 || depositPending} className="shadow-lg shadow-primary/20">
-              {depositPending ? (
-                <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Processing...</>
-              ) : (
-                <>Continue to Payment <ExternalLink className="w-4 h-4 ml-2" /></>
-              )}
-            </Button>
+            {depositMethod === "crypto" ? (
+              <Button
+                onClick={handleCryptoDeposit}
+                disabled={!phantomConnected || !parseFloat(cryptoDepositAmount)}
+                className="shadow-lg shadow-primary/20"
+              >
+                Confirm Crypto Deposit
+              </Button>
+            ) : (
+              <Button onClick={handleDeposit} disabled={parseFloat(depositAmount) < 100 || depositPending} className="shadow-lg shadow-primary/20">
+                {depositPending ? (
+                  <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Processing...</>
+                ) : (
+                  <>Continue to Payment <ExternalLink className="w-4 h-4 ml-2" /></>
+                )}
+              </Button>
+            )}
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -651,7 +861,7 @@ function WalletPageContent() {
                   <div className="bg-accent/5 p-3 rounded-xl border border-accent/20">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
-                        <img src="https://phantom.app/img/phantom-icon-purple.svg" alt="" className="w-5 h-5" />
+                        <PhantomIcon className="w-5 h-5" />
                         <div>
                           <p className="text-sm font-medium">Phantom Wallet</p>
                           <p className="text-xs text-muted-foreground font-mono">{phantomAddress.slice(0, 8)}...{phantomAddress.slice(-6)}</p>
@@ -662,7 +872,7 @@ function WalletPageContent() {
                   </div>
                 ) : (
                   <Button variant="outline" className="w-full gap-2" onClick={connectPhantom}>
-                    <img src="https://phantom.app/img/phantom-icon-purple.svg" alt="" className="w-4 h-4" />
+                    <PhantomIcon className="w-4 h-4" />
                     {phantomAvailable ? "Connect Phantom Wallet" : "Install Phantom Wallet"}
                   </Button>
                 )}
@@ -675,6 +885,24 @@ function WalletPageContent() {
                     className="mt-2 h-12 font-mono text-sm"
                   />
                 </div>
+
+                {/* Crypto withdrawal fee breakdown */}
+                {parseFloat(withdrawAmount) > 0 && (
+                  <div className="bg-muted rounded-lg p-3 space-y-1.5 text-xs">
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Withdraw Amount (NGN)</span>
+                      <span className="font-medium">₦{parseFloat(withdrawAmount).toLocaleString()}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">USDC Equivalent</span>
+                      <span className="font-medium">{usdcNgn > 0 ? (parseFloat(withdrawAmount) / usdcNgn).toFixed(2) : "0.00"} USDC</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Est. Network Fee</span>
+                      <span className="font-medium text-muted-foreground">~0.000005 SOL</span>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
 

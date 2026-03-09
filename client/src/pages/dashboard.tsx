@@ -5,24 +5,26 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useFirebaseAuth } from "@/hooks/use-firebase-auth";
+import { useWallet } from "@/hooks/use-wallet";
 import {
   Plus, Search, ClipboardList, Users, Wallet, TrendingUp,
   Star, Clock, CheckCircle, ArrowRight, Bell, Briefcase,
-  BarChart3, Activity
+  BarChart3, Activity, Eye, EyeOff
 } from "lucide-react";
 import { Link, Redirect } from "wouter";
 import { motion } from "framer-motion";
 import { useTasksStore } from "@/stores/tasks-store";
-import { useWalletLocalStore } from "@/stores/wallet-local-store";
 import { useProfileStore } from "@/stores/profile-store";
 import { useLocalizationStore } from "@/stores/localization-store";
+import { useState } from "react";
 
 export default function Dashboard() {
   const { user } = useFirebaseAuth();
-  const { availableBalance } = useWalletLocalStore();
+  const { availableBalance, escrowBalance, isLoading: walletLoading } = useWallet();
   const { formatLocal } = useLocalizationStore();
   const tasks = useTasksStore((s) => s.tasks);
   const currentProfile = useProfileStore((s) => s.getCurrentProfile());
+  const [hideBalance, setHideBalance] = useState(false);
 
   if (!user) return <Redirect to="/auth" />;
 
@@ -43,6 +45,8 @@ export default function Dashboard() {
   const recentTasks = [...myTasks, ...myApplications]
     .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
     .slice(0, 5);
+
+  const masked = "••••••";
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
@@ -88,8 +92,16 @@ export default function Dashboard() {
               <Card className="bg-gradient-to-r from-primary to-accent text-primary-foreground border-0 shadow-xl">
                 <CardContent className="p-6 flex items-center justify-between">
                   <div>
-                    <p className="text-primary-foreground/70 text-sm">Available Balance</p>
-                    <p className="text-3xl font-bold">{formatLocal(availableBalance)}</p>
+                    <div className="flex items-center gap-2 mb-1">
+                      <p className="text-primary-foreground/70 text-sm">Available Balance</p>
+                      <button onClick={() => setHideBalance(!hideBalance)} className="text-primary-foreground/60 hover:text-primary-foreground transition-colors">
+                        {hideBalance ? <EyeOff size={14} /> : <Eye size={14} />}
+                      </button>
+                    </div>
+                    <p className="text-3xl font-bold">{hideBalance ? masked : formatLocal(availableBalance)}</p>
+                    {escrowBalance > 0 && (
+                      <p className="text-primary-foreground/60 text-xs mt-1">Escrow: {hideBalance ? masked : formatLocal(escrowBalance)}</p>
+                    )}
                   </div>
                   <Link href="/wallet">
                     <Button variant="secondary" className="bg-primary-foreground/20 hover:bg-primary-foreground/30 text-primary-foreground border-0 gap-2">
