@@ -1,4 +1,5 @@
 import { Navbar } from "@/components/layout/navbar";
+import { HelpChainLogo } from "@/components/ui/helpchain-logo";
 import { Footer } from "@/components/layout/footer";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
