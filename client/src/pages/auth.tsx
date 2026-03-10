@@ -76,9 +76,9 @@ export default function AuthPage() {
         setTimeout(() => sendWelcomeNotification(displayName), 2000);
         toast({
           title: "Account created! 🎉",
-          description: "Welcome to HelpChain! Please check your email to verify your account.",
+          description: "Welcome to HelpChain! Let's set up your profile.",
         });
-        setLocation("/profile");
+        setLocation("/onboarding");
       } else if (mode === "reset") {
         await resetPassword(email);
         toast({
