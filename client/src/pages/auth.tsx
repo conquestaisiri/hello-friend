@@ -109,14 +109,16 @@ export default function AuthPage() {
   const handleGoogleSignIn = async () => {
     try {
       await signInWithGoogle();
-      // Send welcome notification for first-time Google sign-in
+      // Check if first-time user (no onboarding done)
+      const onboardingDone = localStorage.getItem("hc-onboarding-done");
       setTimeout(() => sendWelcomeNotification(user?.displayName || undefined), 2000);
       toast({
         title: "Welcome!",
         description: "You have successfully signed in with Google.",
       });
-      setLocation("/profile");
+      setLocation(onboardingDone ? "/profile" : "/onboarding");
     } catch (error: any) {
+      if (error?.message?.includes("cancelled") || error?.code === "auth/popup-closed-by-user") return;
       toast({
         title: "Error",
         description: error.message || "Failed to sign in with Google",
