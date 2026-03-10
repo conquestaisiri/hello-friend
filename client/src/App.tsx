@@ -21,6 +21,7 @@ import BatchManagementPage from "@/pages/batch-management";
 import MessagesPage from "@/pages/messages";
 import WalletPage from "@/pages/wallet";
 import SettingsPage from "@/pages/settings";
+import OnboardingPage from "@/pages/onboarding";
 import HowItWorks from "@/pages/how-it-works";
 import SafetyPage from "@/pages/safety";
 import StoriesPage from "@/pages/stories";
@@ -43,6 +44,7 @@ function Router() {
     <Switch>
       <Route path="/" component={Home} />
       <Route path="/auth" component={AuthPage} />
+      <Route path="/onboarding" component={OnboardingPage} />
       <Route path="/dashboard" component={Dashboard} />
       <Route path="/discover" component={DiscoverPage} />
       <Route path="/search" component={DiscoverPage} />

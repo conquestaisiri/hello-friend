@@ -230,17 +230,52 @@ export function Navbar({ variant = 'default' }: NavbarProps) {
                           "h-5 w-5 transition-colors duration-300",
                           shouldBeTransparent ? "text-white" : "text-muted-foreground"
                         )} />
-                        <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-accent rounded-full" />
+                        {unreadCount > 0 && (
+                          <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 rounded-full bg-destructive text-destructive-foreground text-[10px] flex items-center justify-center font-bold">
+                            {unreadCount > 9 ? "9+" : unreadCount}
+                          </span>
+                        )}
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end" className="w-80 p-0 rounded-2xl shadow-xl border-border">
-                      <div className="p-4 border-b border-border font-semibold text-sm bg-muted rounded-t-2xl">
-                        Notifications
+                      <div className="p-4 border-b border-border font-semibold text-sm bg-muted rounded-t-2xl flex items-center justify-between">
+                        <span>Notifications</span>
+                        {unreadCount > 0 && (
+                          <button onClick={() => markAllRead()} className="text-xs text-primary hover:underline font-medium">
+                            Mark all read
+                          </button>
+                        )}
                       </div>
-                      <div className="p-8 text-center text-muted-foreground text-sm">
-                        <Bell className="w-10 h-10 mx-auto mb-3 opacity-20" />
-                        No new notifications
-                      </div>
+                      {notifications.length === 0 ? (
+                        <div className="p-8 text-center text-muted-foreground text-sm">
+                          <Bell className="w-10 h-10 mx-auto mb-3 opacity-20" />
+                          No notifications yet
+                        </div>
+                      ) : (
+                        <div className="max-h-[320px] overflow-y-auto">
+                          {notifications.slice(0, 10).map((notif) => (
+                            <div
+                              key={notif.id}
+                              onClick={() => !notif.is_read && markAsRead(notif.id)}
+                              className={cn(
+                                "px-4 py-3 border-b border-border/50 last:border-0 cursor-pointer hover:bg-muted/50 transition-colors",
+                                !notif.is_read && "bg-primary/5"
+                              )}
+                            >
+                              <div className="flex items-start gap-2">
+                                {!notif.is_read && <div className="w-2 h-2 rounded-full bg-primary mt-1.5 flex-shrink-0" />}
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-sm font-medium text-foreground truncate">{notif.title}</p>
+                                  <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{notif.message}</p>
+                                  <p className="text-[10px] text-muted-foreground/60 mt-1">
+                                    {new Date(notif.created_at).toLocaleDateString(undefined, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
+                                  </p>
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
                     </DropdownMenuContent>
                   </DropdownMenu>
                   
