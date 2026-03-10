@@ -51,6 +51,7 @@ interface NavbarProps {
 
 export function Navbar({ variant = 'default' }: NavbarProps) {
   const { user, logout, loading } = useFirebaseAuth();
+  const { notifications, unreadCount, markAsRead, markAllRead } = useNotifications();
   const [location, setLocation] = useLocation();
   const { isMobileMenuOpen, setIsMobileMenuOpen } = useMobileMenu();
   const [scrolled, setScrolled] = useState(false);
