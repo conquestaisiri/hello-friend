@@ -11,8 +11,10 @@ import {
 import { useRoute, useLocation, Link } from "wouter";
 import { useFirebaseAuth } from "@/hooks/use-firebase-auth";
 import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
 import { motion } from "framer-motion";
+
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
+const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 
 export default function PublicProfilePage() {
   const { user, getIdToken } = useFirebaseAuth();
