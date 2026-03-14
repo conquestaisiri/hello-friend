@@ -67,9 +67,9 @@ const trust = [
 ];
 
 const testimonials = [
-  { name: "Chisom A.", role: "Client — Lagos",  quote: "I needed a logo urgently and got 8 offers in under an hour. The escrow process gave me total peace of mind.", initials: "CA" },
-  { name: "David M.",  role: "Worker — Nairobi",quote: "I've been earning consistently for 6 months. Fast payouts and I've never had a payment dispute.", initials: "DM" },
-  { name: "Sandra E.", role: "Client — London", quote: "HelpChain's verification system makes all the difference. Quality workers and a trustworthy process.", initials: "SE" },
+  { name: "Chisom A.", role: "Client — Lagos",  quote: "I needed a logo urgently and got 8 offers in under an hour. The escrow process gave me total peace of mind.", img: "https://i.pravatar.cc/40?img=47" },
+  { name: "David M.",  role: "Worker — Nairobi",quote: "I've been earning consistently for 6 months. Fast payouts and I've never had a payment dispute.", img: "https://i.pravatar.cc/40?img=11" },
+  { name: "Sandra E.", role: "Client — London", quote: "HelpChain's verification system makes all the difference. Quality workers and a trustworthy process.", img: "https://i.pravatar.cc/40?img=32" },
 ];
 
 /* ══════════════════════════════════════════════════════════
@@ -229,16 +229,16 @@ export default function Home() {
           </motion.div>
         </div>
 
-        {/* Worker avatars */}
+        {/* Worker profile cards — real photos */}
         <motion.div
           initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.45, duration: 0.6 }}
           className="mt-14 flex items-center justify-center gap-3 flex-wrap"
         >
           {[
-            { name: "Amaka U.",  cat: "Designer",   rating: "5.0", initials: "AU" },
-            { name: "James D.",  cat: "Developer",  rating: "4.9", initials: "JD" },
-            { name: "Fatima K.", cat: "Writer",     rating: "4.8", initials: "FK" },
-            { name: "Tobi A.",   cat: "Delivery",   rating: "5.0", initials: "TA" },
+            { name: "Amaka U.",  cat: "Designer",   rating: "5.0", img: "https://i.pravatar.cc/40?img=47" },
+            { name: "James D.",  cat: "Developer",  rating: "4.9", img: "https://i.pravatar.cc/40?img=12" },
+            { name: "Fatima K.", cat: "Writer",     rating: "4.8", img: "https://i.pravatar.cc/40?img=28" },
+            { name: "Tobi A.",   cat: "Delivery",   rating: "5.0", img: "https://i.pravatar.cc/40?img=33" },
           ].map((w, i) => (
             <motion.div
               key={w.name}
@@ -246,9 +246,11 @@ export default function Home() {
               className="flex items-center gap-3 bg-white rounded-2xl px-4 py-3"
               style={{ border: "1px solid #F0F0F0", boxShadow: "0 1px 6px rgba(0,0,0,0.05)" }}
             >
-              <div className="w-8 h-8 rounded-full bg-[#0C6B38] flex items-center justify-center text-white text-xs font-bold shrink-0">
-                {w.initials}
-              </div>
+              <img
+                src={w.img}
+                alt={w.name}
+                className="w-8 h-8 rounded-full object-cover border-2 border-white shadow-sm shrink-0"
+              />
               <div>
                 <p className="text-xs font-semibold text-gray-800 leading-tight">{w.name}</p>
                 <p className="text-xs text-gray-400">{w.cat}</p>
@@ -258,6 +260,28 @@ export default function Home() {
                 <span className="text-xs font-medium text-gray-700">{w.rating}</span>
               </div>
             </motion.div>
+          ))}
+        </motion.div>
+
+        {/* Visual image grid — people helping each other */}
+        <motion.div
+          initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.7, duration: 0.6 }}
+          className="mt-16 grid grid-cols-3 gap-3 max-w-2xl mx-auto"
+        >
+          {[
+            { src: "https://images.unsplash.com/photo-1582213782179-e0d53f98f2ca?w=400&h=280&fit=crop&auto=format", alt: "people helping", tall: true },
+            { src: "https://images.unsplash.com/photo-1521737711867-e3b97375f902?w=400&h=120&fit=crop&auto=format", alt: "team working", tall: false },
+            { src: "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400&h=120&fit=crop&auto=format", alt: "home services", tall: false },
+          ].map((img, i) => (
+            <div key={i} className={`rounded-2xl overflow-hidden ${i === 0 ? "row-span-2" : ""}`}>
+              <img
+                src={img.src}
+                alt={img.alt}
+                className="w-full h-full object-cover"
+                style={{ height: i === 0 ? "260px" : "122px" }}
+                loading="lazy"
+              />
+            </div>
           ))}
         </motion.div>
       </section>
@@ -321,15 +345,26 @@ export default function Home() {
             </p>
           </div>
 
-          <div className="grid md:grid-cols-3 gap-8">
-            {steps.map((step, i) => (
+          <div className="grid md:grid-cols-3 gap-6">
+            {[
+              { ...steps[0], img: "https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=500&h=280&fit=crop&auto=format" },
+              { ...steps[1], img: "https://images.unsplash.com/photo-1553484771-371a605b060b?w=500&h=280&fit=crop&auto=format" },
+              { ...steps[2], img: "https://images.unsplash.com/photo-1601597111158-2fceff292cdc?w=500&h=280&fit=crop&auto=format" },
+            ].map((step, i) => (
               <motion.div key={step.n} variants={fadeUp} initial="hidden" whileInView="show" viewport={{ once: true }} custom={i}>
-                <div className="text-center">
-                  <div className="w-14 h-14 rounded-2xl flex items-center justify-center text-white text-xl font-bold mx-auto mb-5" style={{ background: "#0C6B38" }}>
-                    {step.n}
+                <div className="bg-white rounded-2xl overflow-hidden" style={{ border: "1px solid #F0F0F0" }}>
+                  <div className="h-40 overflow-hidden">
+                    <img src={step.img} alt={step.title} className="w-full h-full object-cover" loading="lazy" />
                   </div>
-                  <h3 className="font-bold text-[#0D0D0D] mb-2">{step.title}</h3>
-                  <p className="text-sm text-gray-500 leading-relaxed">{step.desc}</p>
+                  <div className="p-5">
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className="w-10 h-10 rounded-xl flex items-center justify-center text-white text-base font-bold shrink-0" style={{ background: "#0C6B38" }}>
+                        {step.n}
+                      </div>
+                      <h3 className="font-bold text-[#0D0D0D]">{step.title}</h3>
+                    </div>
+                    <p className="text-sm text-gray-500 leading-relaxed">{step.desc}</p>
+                  </div>
                 </div>
               </motion.div>
             ))}
@@ -480,9 +515,11 @@ export default function Home() {
                   </div>
                   <p className="text-sm text-gray-600 leading-relaxed flex-1 mb-5">"{t.quote}"</p>
                   <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-full bg-[#0C6B38] flex items-center justify-center text-white text-xs font-bold shrink-0">
-                      {t.initials}
-                    </div>
+                    <img
+                      src={t.img}
+                      alt={t.name}
+                      className="w-9 h-9 rounded-full object-cover border-2 border-white shadow-sm shrink-0"
+                    />
                     <div>
                       <p className="text-sm font-semibold text-[#0D0D0D]">{t.name}</p>
                       <p className="text-xs text-gray-400">{t.role}</p>
