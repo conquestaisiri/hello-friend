@@ -16,13 +16,32 @@ import { useLocalizationStore } from "@/stores/localization-store";
 
 /* ── category maps ──────────────────────────────────────── */
 const CATEGORY_MAP: Record<string, string> = {
-  physical_help: "Physical Help", errands: "Errands", tech_help: "Tech Help",
-  guidance: "Guidance", transportation: "Transportation", home_repairs: "Home Repairs",
-  childcare: "Childcare", pet_care: "Pet Care", tutoring: "Tutoring",
-  digital_work: "Digital Work", design: "Design", writing: "Writing",
-  programming: "Programming", marketing: "Marketing", research: "Research",
-  education: "Education", translation: "Translation", consulting: "Consulting",
-  home_services: "Home Services", other: "Other",
+  physical_help:    "Physical Help",
+  errands:          "Errands",
+  tech_help:        "Tech Help",
+  guidance:         "Guidance",
+  transportation:   "Transportation",
+  home_repairs:     "Home Repairs",
+  childcare:        "Childcare",
+  pet_care:         "Pet Care",
+  tutoring:         "Tutoring",
+  digital_work:     "Digital Work",
+  design:           "Design",
+  writing:          "Writing",
+  programming:      "Programming",
+  marketing:        "Marketing",
+  research:         "Research",
+  education:        "Education",
+  translation:      "Translation",
+  consulting:       "Consulting",
+  home_services:    "Home Services",
+  photography:      "Photography",
+  event_planning:   "Event Planning",
+  fitness:          "Fitness & Health",
+  cooking:          "Cooking & Catering",
+  personal_shopping:"Personal Shopping",
+  legal:            "Legal & Finance",
+  other:            "Other",
 };
 
 /* Colored badges per category */
@@ -43,10 +62,16 @@ const CATEGORY_COLORS: Record<string, string> = {
   guidance:       "bg-indigo-50 text-indigo-700 border-indigo-200",
   transportation: "bg-yellow-50 text-yellow-700 border-yellow-200",
   translation:    "bg-rose-50 text-rose-700 border-rose-200",
-  consulting:     "bg-pink-50 text-pink-700 border-pink-200",
-  childcare:      "bg-pink-50 text-pink-700 border-pink-200",
-  pet_care:       "bg-green-50 text-green-700 border-green-200",
-  other:          "bg-gray-50 text-gray-600 border-gray-200",
+  consulting:        "bg-pink-50 text-pink-700 border-pink-200",
+  childcare:         "bg-pink-50 text-pink-700 border-pink-200",
+  pet_care:          "bg-green-50 text-green-700 border-green-200",
+  photography:       "bg-purple-50 text-purple-700 border-purple-200",
+  event_planning:    "bg-fuchsia-50 text-fuchsia-700 border-fuchsia-200",
+  fitness:           "bg-lime-50 text-lime-700 border-lime-200",
+  cooking:           "bg-red-50 text-red-700 border-red-200",
+  personal_shopping: "bg-amber-50 text-amber-700 border-amber-200",
+  legal:             "bg-slate-50 text-slate-700 border-slate-200",
+  other:             "bg-gray-50 text-gray-600 border-gray-200",
 };
 
 /* Task cover images per category — picsum seeds for consistency */
@@ -69,8 +94,14 @@ const CATEGORY_IMAGES: Record<string, string> = {
   errands:        "https://picsum.photos/seed/errands-shopping/800/400",
   transportation: "https://picsum.photos/seed/delivery-transport/800/400",
   childcare:      "https://picsum.photos/seed/childcare-kids/800/400",
-  pet_care:       "https://picsum.photos/seed/pet-dog/800/400",
-  other:          "https://picsum.photos/seed/task-general/800/400",
+  pet_care:          "https://picsum.photos/seed/pet-dog/800/400",
+  photography:       "https://picsum.photos/seed/photography-camera/800/400",
+  event_planning:    "https://picsum.photos/seed/event-party/800/400",
+  fitness:           "https://picsum.photos/seed/fitness-gym/800/400",
+  cooking:           "https://picsum.photos/seed/cooking-chef/800/400",
+  personal_shopping: "https://picsum.photos/seed/shopping-bags/800/400",
+  legal:             "https://picsum.photos/seed/legal-office/800/400",
+  other:             "https://picsum.photos/seed/task-general/800/400",
 };
 
 /* Avatar placeholder for task poster — derived from name */
@@ -187,7 +218,7 @@ export default function DiscoverPage() {
                 <Filter className="h-3.5 w-3.5 mr-2 text-gray-400" />
                 <SelectValue placeholder="All Categories" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="max-h-[260px] overflow-y-auto">
                 <SelectItem value="all">All Categories</SelectItem>
                 {Object.entries(CATEGORY_MAP).map(([v, l]) => (
                   <SelectItem key={v} value={v}>{l}</SelectItem>

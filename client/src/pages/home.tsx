@@ -35,6 +35,10 @@ const categories = [
   { label: "Education",      icon: GraduationCap, desc: "Tutoring, mentoring" },
   { label: "Marketing",      icon: Megaphone,     desc: "Social media, SEO, ads" },
   { label: "Translation",    icon: Languages,     desc: "Documents, localization" },
+  { label: "Photography",    icon: Briefcase,     desc: "Events, portraits, product" },
+  { label: "Event Planning", icon: BarChart3,     desc: "Weddings, parties, corporate" },
+  { label: "Fitness",        icon: Zap,           desc: "Personal training, wellness" },
+  { label: "Cooking",        icon: HeartHandshake,desc: "Catering, meal prep, chef" },
 ];
 
 const steps = [
@@ -44,19 +48,19 @@ const steps = [
 ];
 
 const sampleTasks = [
-  { cat: "Design",        title: "Design a logo for my coffee brand",      budget: "$80",  bids: 9  },
-  { cat: "Home Services", title: "Deep clean 3-bedroom apartment (Lagos)",  budget: "$45",  bids: 5  },
-  { cat: "Tech Help",     title: "Fix bug in my React web application",     budget: "$120", bids: 14 },
-  { cat: "Writing",       title: "Write 10 blog articles about fintech",    budget: "$200", bids: 6  },
-  { cat: "Delivery",      title: "Pick up and deliver groceries (Abuja)",   budget: "$15",  bids: 3  },
-  { cat: "Education",     title: "Teach my daughter GCSE Mathematics",      budget: "$60",  bids: 8  },
+  { cat: "Design",        title: "Design a logo for my coffee brand",      budget: "₦120,000", bids: 9,  img: "https://picsum.photos/seed/design-creative/600/300" },
+  { cat: "Home Services", title: "Deep clean 3-bedroom apartment (Lagos)",  budget: "₦65,000",  bids: 5,  img: "https://picsum.photos/seed/home-cleaning/600/300" },
+  { cat: "Tech Help",     title: "Fix bug in my React web application",     budget: "₦180,000", bids: 14, img: "https://picsum.photos/seed/code-laptop/600/300" },
+  { cat: "Writing",       title: "Write 10 blog articles about fintech",    budget: "₦280,000", bids: 6,  img: "https://picsum.photos/seed/writing-desk/600/300" },
+  { cat: "Delivery",      title: "Pick up and deliver groceries (Abuja)",   budget: "₦15,000",  bids: 3,  img: "https://picsum.photos/seed/delivery-transport/600/300" },
+  { cat: "Education",     title: "Teach my daughter GCSE Mathematics",      budget: "₦80,000",  bids: 8,  img: "https://picsum.photos/seed/tutoring-student/600/300" },
 ];
 
 const stats = [
   { value: "50K+", label: "Tasks Completed" },
   { value: "120+", label: "Countries Active" },
   { value: "4.9",  label: "Average Rating"  },
-  { value: "$2M+", label: "Paid to Workers" },
+  { value: "₦3B+", label: "Paid to Workers" },
 ];
 
 const trust = [
@@ -119,9 +123,7 @@ export default function Home() {
           {/* Logo */}
           <Link href="/">
             <div className="flex items-center gap-2 cursor-pointer select-none">
-              <div className="w-8 h-8 rounded-lg bg-[#0C6B38] flex items-center justify-center shrink-0">
-                <HeartHandshake className="w-4 h-4 text-white" strokeWidth={2.2} />
-              </div>
+              <img src="/images/helpchain-logo.png" alt="HelpChain" className="w-9 h-9 object-contain rounded-xl" />
               <span className="text-[15px] font-bold tracking-tight text-[#0C6B38]">HelpChain</span>
             </div>
           </Link>
@@ -263,26 +265,35 @@ export default function Home() {
           ))}
         </motion.div>
 
-        {/* Visual image grid — people helping each other */}
+        {/* Hero visual — single strong image */}
         <motion.div
           initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.7, duration: 0.6 }}
-          className="mt-16 grid grid-cols-3 gap-3 max-w-2xl mx-auto"
+          className="mt-16 relative rounded-3xl overflow-hidden max-w-4xl mx-auto"
+          style={{ height: "400px" }}
         >
-          {[
-            { src: "https://images.unsplash.com/photo-1582213782179-e0d53f98f2ca?w=400&h=280&fit=crop&auto=format", alt: "people helping", tall: true },
-            { src: "https://images.unsplash.com/photo-1521737711867-e3b97375f902?w=400&h=120&fit=crop&auto=format", alt: "team working", tall: false },
-            { src: "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400&h=120&fit=crop&auto=format", alt: "home services", tall: false },
-          ].map((img, i) => (
-            <div key={i} className={`rounded-2xl overflow-hidden ${i === 0 ? "row-span-2" : ""}`}>
-              <img
-                src={img.src}
-                alt={img.alt}
-                className="w-full h-full object-cover"
-                style={{ height: i === 0 ? "260px" : "122px" }}
-                loading="lazy"
-              />
+          <img
+            src="https://images.unsplash.com/photo-1531482615713-2afd69097998?w=1200&h=700&fit=crop&auto=format"
+            alt="Diverse team collaborating on tasks"
+            className="w-full h-full object-cover"
+          />
+          <div className="absolute inset-0" style={{ background: "linear-gradient(to top, rgba(0,0,0,0.45) 0%, rgba(0,0,0,0.05) 60%)" }} />
+          {/* floating stat cards */}
+          <div className="absolute bottom-6 left-6 right-6 flex items-end justify-between">
+            <div className="flex gap-3">
+              <div className="bg-white/95 backdrop-blur-sm rounded-2xl px-5 py-3 shadow-lg">
+                <p className="text-xl font-bold" style={{ color: "#0C6B38" }}>50K+</p>
+                <p className="text-xs text-gray-500">Tasks Done</p>
+              </div>
+              <div className="bg-white/95 backdrop-blur-sm rounded-2xl px-5 py-3 shadow-lg">
+                <p className="text-xl font-bold" style={{ color: "#0C6B38" }}>₦3B+</p>
+                <p className="text-xs text-gray-500">Paid to Workers</p>
+              </div>
+              <div className="bg-white/95 backdrop-blur-sm rounded-2xl px-5 py-3 shadow-lg">
+                <p className="text-xl font-bold" style={{ color: "#0C6B38" }}>4.9★</p>
+                <p className="text-xs text-gray-500">Avg Rating</p>
+              </div>
             </div>
-          ))}
+          </div>
         </motion.div>
       </section>
 
@@ -347,14 +358,78 @@ export default function Home() {
 
           <div className="grid md:grid-cols-3 gap-6">
             {[
-              { ...steps[0], img: "https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=500&h=280&fit=crop&auto=format" },
-              { ...steps[1], img: "https://images.unsplash.com/photo-1553484771-371a605b060b?w=500&h=280&fit=crop&auto=format" },
-              { ...steps[2], img: "https://images.unsplash.com/photo-1601597111158-2fceff292cdc?w=500&h=280&fit=crop&auto=format" },
+              {
+                ...steps[0],
+                svg: (
+                  <svg viewBox="0 0 280 180" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-full">
+                    <rect width="280" height="180" fill="#E8F5EF"/>
+                    <rect x="60" y="40" width="160" height="110" rx="12" fill="white" stroke="#0C6B38" strokeWidth="2"/>
+                    <rect x="75" y="58" width="90" height="8" rx="4" fill="#0C6B38" opacity="0.3"/>
+                    <rect x="75" y="74" width="130" height="6" rx="3" fill="#E5E7EB"/>
+                    <rect x="75" y="86" width="110" height="6" rx="3" fill="#E5E7EB"/>
+                    <rect x="75" y="98" width="120" height="6" rx="3" fill="#E5E7EB"/>
+                    <rect x="75" y="118" width="70" height="20" rx="6" fill="#0C6B38"/>
+                    <rect x="151" y="122" width="50" height="12" rx="4" fill="white" opacity="0.3"/>
+                    <circle cx="215" cy="55" r="22" fill="#0C6B38" opacity="0.12"/>
+                    <circle cx="215" cy="55" r="14" fill="#0C6B38" opacity="0.2"/>
+                    <path d="M209 55l4 4 7-7" stroke="#0C6B38" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
+                    <circle cx="65" cy="40" r="18" fill="#F0FDF4"/>
+                    <rect x="58" y="33" width="14" height="14" rx="3" fill="#0C6B38" opacity="0.2"/>
+                    <path d="M62 40h6M65 37v6" stroke="#0C6B38" strokeWidth="2" strokeLinecap="round"/>
+                  </svg>
+                )
+              },
+              {
+                ...steps[1],
+                svg: (
+                  <svg viewBox="0 0 280 180" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-full">
+                    <rect width="280" height="180" fill="#E8F5EF"/>
+                    {[0,1,2].map(i => (
+                      <g key={i} transform={`translate(${30 + i * 82}, 30)`}>
+                        <rect width="74" height="120" rx="10" fill="white" stroke={i === 1 ? "#0C6B38" : "#E5E7EB"} strokeWidth={i === 1 ? 2 : 1}/>
+                        <circle cx="37" cy="30" r="16" fill={i === 1 ? "#0C6B38" : "#F3F4F6"}/>
+                        <circle cx="37" cy="24" r="7" fill={i === 1 ? "white" : "#D1D5DB"} opacity="0.7"/>
+                        <ellipse cx="37" cy="38" rx="12" ry="7" fill={i === 1 ? "white" : "#D1D5DB"} opacity="0.5"/>
+                        <rect x="10" y="55" width="54" height="5" rx="2.5" fill={i === 1 ? "#0C6B38" : "#E5E7EB"} opacity={i === 1 ? 0.5 : 1}/>
+                        <rect x="17" y="66" width="40" height="4" rx="2" fill="#E5E7EB"/>
+                        <rect x="17" y="76" width="40" height="4" rx="2" fill="#E5E7EB"/>
+                        {i === 1 && <rect x="10" y="92" width="54" height="18" rx="5" fill="#0C6B38"/>}
+                        {i === 1 && <path d="M30 101l4 4 8-8" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>}
+                        {i !== 1 && <rect x="10" y="92" width="54" height="18" rx="5" fill="#F3F4F6"/>}
+                      </g>
+                    ))}
+                  </svg>
+                )
+              },
+              {
+                ...steps[2],
+                svg: (
+                  <svg viewBox="0 0 280 180" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-full">
+                    <rect width="280" height="180" fill="#E8F5EF"/>
+                    <rect x="70" y="30" width="140" height="110" rx="16" fill="white" stroke="#0C6B38" strokeWidth="1.5"/>
+                    <rect x="70" y="30" width="140" height="38" rx="16" fill="#0C6B38"/>
+                    <rect x="70" y="50" width="140" height="18" fill="#0C6B38"/>
+                    <rect x="84" y="40" width="60" height="8" rx="4" fill="white" opacity="0.4"/>
+                    <rect x="84" y="40" width="30" height="8" rx="4" fill="white" opacity="0.6"/>
+                    <circle cx="140" cy="95" r="28" fill="#E8F5EF"/>
+                    <path d="M140 80v10M140 80c0 0-8 5-8 15s8 15 8 15 8-5 8-15-8-15-8-15z" stroke="#0C6B38" strokeWidth="0" fill="#0C6B38" opacity="0" />
+                    <path d="M126 82l14 0a14 14 0 0 1 0 28h-14a14 14 0 0 1 0-28z" fill="#0C6B38" opacity="0.12"/>
+                    <path d="M131 96c0-4.97 4.03-9 9-9s9 4.03 9 9-4.03 9-9 9" stroke="#0C6B38" strokeWidth="2" strokeLinecap="round" fill="none"/>
+                    <path d="M127 96h13" stroke="#0C6B38" strokeWidth="2" strokeLinecap="round"/>
+                    <rect x="127" y="82" width="26" height="28" rx="4" fill="#0C6B38" opacity="0.08"/>
+                    <path d="M140 78v6M137 80l3-3 3 3" stroke="#0C6B38" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    <circle cx="140" cy="95" r="14" fill="none" stroke="#0C6B38" strokeWidth="2"/>
+                    <path d="M134 95l4 4 8-8" stroke="#0C6B38" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
+                    <rect x="84" y="128" width="112" height="5" rx="2.5" fill="#E5E7EB"/>
+                    <rect x="100" y="138" width="80" height="5" rx="2.5" fill="#E5E7EB"/>
+                  </svg>
+                )
+              },
             ].map((step, i) => (
               <motion.div key={step.n} variants={fadeUp} initial="hidden" whileInView="show" viewport={{ once: true }} custom={i}>
                 <div className="bg-white rounded-2xl overflow-hidden" style={{ border: "1px solid #F0F0F0" }}>
-                  <div className="h-40 overflow-hidden">
-                    <img src={step.img} alt={step.title} className="w-full h-full object-cover" loading="lazy" />
+                  <div className="h-44 bg-[#E8F5EF] flex items-center justify-center p-4">
+                    {step.svg}
                   </div>
                   <div className="p-5">
                     <div className="flex items-center gap-3 mb-3">
@@ -394,37 +469,48 @@ export default function Home() {
           </Link>
         </div>
 
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
           {sampleTasks.map((task, i) => (
             <motion.div key={task.title} variants={fadeUp} initial="hidden" whileInView="show" viewport={{ once: true }} custom={i}>
               <Link href="/discover">
                 <div
-                  className="group cursor-pointer bg-white rounded-2xl p-5 transition-all duration-200 hover:-translate-y-0.5"
+                  className="group cursor-pointer bg-white rounded-2xl overflow-hidden transition-all duration-200 hover:-translate-y-0.5"
                   style={{ border: "1px solid #F0F0F0", boxShadow: "0 1px 3px rgba(0,0,0,0.04)" }}
-                  onMouseOver={e => { (e.currentTarget as HTMLDivElement).style.borderColor = "rgba(12,107,56,0.22)"; (e.currentTarget as HTMLDivElement).style.boxShadow = "0 4px 16px rgba(12,107,56,0.08)"; }}
+                  onMouseOver={e => { (e.currentTarget as HTMLDivElement).style.borderColor = "rgba(12,107,56,0.22)"; (e.currentTarget as HTMLDivElement).style.boxShadow = "0 6px 20px rgba(12,107,56,0.09)"; }}
                   onMouseOut={e => { (e.currentTarget as HTMLDivElement).style.borderColor = "#F0F0F0"; (e.currentTarget as HTMLDivElement).style.boxShadow = "0 1px 3px rgba(0,0,0,0.04)"; }}
                 >
-                  <div className="flex items-center justify-between mb-4">
-                    <span
-                      className="text-xs font-semibold px-2.5 py-1 rounded-full"
-                      style={{ background: "rgba(12,107,56,0.08)", border: "1px solid rgba(12,107,56,0.14)", color: "#0C6B38" }}
-                    >
-                      {task.cat}
-                    </span>
-                    <ArrowUpRight className="w-4 h-4 text-gray-300 group-hover:text-[#0C6B38] transition-colors" />
-                  </div>
-                  <h3 className="font-semibold text-sm text-[#0D0D0D] leading-snug mb-5">{task.title}</h3>
-                  <div className="flex items-center justify-between pt-4" style={{ borderTop: "1px solid #F5F5F5" }}>
-                    <div>
-                      <p className="text-lg font-bold" style={{ color: "#0C6B38" }}>{task.budget}</p>
-                      <p className="text-xs text-gray-400">{task.bids} offers received</p>
+                  {/* cover image */}
+                  <div className="relative h-40 overflow-hidden bg-gray-100">
+                    <img
+                      src={task.img}
+                      alt={task.cat}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                      loading="lazy"
+                    />
+                    <div className="absolute top-3 left-3">
+                      <span
+                        className="text-xs font-semibold px-2.5 py-1 rounded-full bg-white/92 backdrop-blur-sm"
+                        style={{ border: "1px solid rgba(12,107,56,0.2)", color: "#0C6B38" }}
+                      >
+                        {task.cat}
+                      </span>
                     </div>
-                    <button
-                      className="text-xs font-semibold px-4 py-2 rounded-lg transition-all"
-                      style={{ background: "rgba(12,107,56,0.08)", color: "#0C6B38", border: "1px solid rgba(12,107,56,0.14)" }}
-                    >
-                      Send Offer
-                    </button>
+                  </div>
+                  {/* card body */}
+                  <div className="p-5">
+                    <h3 className="font-semibold text-sm text-[#0D0D0D] leading-snug mb-4 group-hover:text-[#0C6B38] transition-colors">{task.title}</h3>
+                    <div className="flex items-center justify-between pt-3.5" style={{ borderTop: "1px solid #F5F5F5" }}>
+                      <div>
+                        <p className="text-base font-bold" style={{ color: "#0C6B38" }}>{task.budget}</p>
+                        <p className="text-xs text-gray-400">{task.bids} offers</p>
+                      </div>
+                      <button
+                        className="text-xs font-semibold px-4 py-2 rounded-lg transition-all"
+                        style={{ background: "rgba(12,107,56,0.08)", color: "#0C6B38", border: "1px solid rgba(12,107,56,0.14)" }}
+                      >
+                        Send Offer
+                      </button>
+                    </div>
                   </div>
                 </div>
               </Link>
@@ -566,9 +652,7 @@ export default function Home() {
 
             <div className="col-span-2">
               <div className="flex items-center gap-2 mb-5">
-                <div className="w-8 h-8 rounded-lg bg-[#0C6B38] flex items-center justify-center">
-                  <HeartHandshake className="w-4 h-4 text-white" strokeWidth={2.2} />
-                </div>
+                <img src="/images/helpchain-logo.png" alt="HelpChain" className="w-9 h-9 object-contain rounded-xl" />
                 <span className="text-base font-bold text-white">HelpChain</span>
               </div>
               <p className="text-sm text-white/45 leading-relaxed max-w-xs mb-6">

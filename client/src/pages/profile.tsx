@@ -1,10 +1,6 @@
 import { Navbar } from "@/components/layout/navbar";
 import { Footer } from "@/components/layout/footer";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
@@ -14,12 +10,27 @@ import { useProfileStore } from "@/stores/profile-store";
 import { useToast } from "@/hooks/use-toast";
 import {
   Star, ShieldCheck, Edit2, MapPin, Calendar, CheckCircle,
-  Briefcase, Clock, TrendingUp, Camera, Award
+  Clock, TrendingUp, Camera, Award, Briefcase
 } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
-import { Progress } from "@/components/ui/progress";
 
+/* ── Green progress bar ── */
+function GreenBar({ value }: { value: number }) {
+  return (
+    <div className="h-1.5 rounded-full bg-gray-100 overflow-hidden">
+      <div className="h-full rounded-full transition-all" style={{ width: `${Math.min(value, 100)}%`, background: "#0C6B38" }} />
+    </div>
+  );
+}
+
+/* ── Sample reviews for new users ── */
+const SAMPLE_REVIEWS = [
+  { name: "Tunde A.", avatar: "https://i.pravatar.cc/40?img=11", text: "Very responsive and professional. Got the job done ahead of schedule.", rating: 5, ago: "2w ago" },
+  { name: "Chioma B.", avatar: "https://i.pravatar.cc/40?img=25", text: "Great communicator, highly recommend for anyone who needs a reliable helper.", rating: 5, ago: "1mo ago" },
+];
+
+/* ═══════════════════════════════════════════════════════════ */
 function ProfilePageContent() {
   const [editOpen, setEditOpen] = useState(false);
   const [profileImage, setProfileImage] = useState<string | null>(null);
@@ -46,21 +57,22 @@ function ProfilePageContent() {
     }
   }, [user]);
 
-  const profile = getCurrentProfile();
-  const displayName = profile?.fullName || user?.displayName || "User";
-  const initials = displayName.split(" ").map((n: string) => n[0]).join("").toUpperCase().slice(0, 2);
-
   useEffect(() => {
     const saved = localStorage.getItem("profilePicture");
     if (saved) setProfileImage(saved);
   }, []);
 
+  const profile = getCurrentProfile();
+  const displayName = profile?.fullName || user?.displayName || "User";
+  const initials = displayName.split(" ").map((n: string) => n[0]).join("").toUpperCase().slice(0, 2);
+  const avatarSrc = profileImage || profile?.avatarUrl || user?.photoURL;
+
   const handleProfileImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
       const reader = new FileReader();
-      reader.onload = (event) => {
-        const data = event.target?.result as string;
+      reader.onload = (evt) => {
+        const data = evt.target?.result as string;
         setProfileImage(data);
         localStorage.setItem("profilePicture", data);
       };
@@ -70,192 +82,272 @@ function ProfilePageContent() {
 
   const handleEditProfile = (e: React.FormEvent) => {
     e.preventDefault();
-    const formData = new FormData(e.target as HTMLFormElement);
+    const fd = new FormData(e.target as HTMLFormElement);
     if (user) {
       updateProfile(user.uid, {
-        fullName: (formData.get("fullName") as string) || displayName,
-        bio: (formData.get("bio") as string) || "",
-        location: (formData.get("location") as string) || "",
-        skills: (formData.get("skills") as string)?.split(",").map((s) => s.trim()).filter(Boolean) || [],
+        fullName: (fd.get("fullName") as string) || displayName,
+        bio: (fd.get("bio") as string) || "",
+        location: (fd.get("location") as string) || "",
+        skills: (fd.get("skills") as string)?.split(",").map(s => s.trim()).filter(Boolean) || [],
       });
       toast({ title: "Profile updated", description: "Your changes have been saved." });
     }
     setEditOpen(false);
   };
 
-  const statsData = [
-    { label: "Tasks Completed", value: profile?.helpsGiven || 0, icon: CheckCircle, color: "text-chart-2" },
-    { label: "Success Rate", value: `${profile?.successRate || 0}%`, icon: TrendingUp, color: "text-primary" },
-    { label: "On-Time Rate", value: `${profile?.onTimeRate || 0}%`, icon: Clock, color: "text-chart-4" },
-    { label: "Response Time", value: profile?.responseTime || "N/A", icon: Briefcase, color: "text-accent" },
-  ];
+  const tier = profile?.verificationTier || 1;
+  const repScore = profile?.reputationScore || 0;
 
   return (
-    <div className="min-h-screen flex flex-col bg-background">
+    <div className="min-h-screen flex flex-col bg-[#F8FAF8]">
       <Navbar />
-      <main className="flex-1 container mx-auto px-4 py-8 max-w-4xl">
-        {/* Profile Header */}
+
+      <main className="flex-1 max-w-4xl mx-auto px-4 sm:px-6 py-10 w-full">
+
+        {/* ── Profile Header ── */}
         <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}>
-          <Card className="border-border mb-6">
-            <CardContent className="p-8">
-              <div className="flex flex-col md:flex-row items-start md:items-center gap-6">
+          <div className="bg-white rounded-3xl overflow-hidden mb-6" style={{ border: "1px solid #F0F0F0", boxShadow: "0 2px 8px rgba(0,0,0,0.04)" }}>
+            {/* Cover banner */}
+            <div className="h-28 w-full relative" style={{ background: "linear-gradient(135deg, #0C6B38 0%, #0a5a30 60%, #084a27 100%)" }}>
+              <div className="absolute top-0 right-0 w-60 h-60 rounded-full opacity-10 bg-white" style={{ transform: "translate(30%,-30%)" }} />
+            </div>
+
+            <div className="px-6 pb-6">
+              {/* Avatar */}
+              <div className="flex items-end justify-between -mt-12 mb-4">
                 <div className="relative">
-                  <Avatar className="w-24 h-24 border-4 border-background shadow-xl cursor-pointer" onClick={() => profileImageInputRef.current?.click()}>
-                    <AvatarImage src={profileImage || profile?.avatarUrl || user?.photoURL || undefined} />
-                    <AvatarFallback className="text-2xl font-bold bg-gradient-to-br from-primary to-accent text-primary-foreground">{initials}</AvatarFallback>
-                  </Avatar>
-                  <button onClick={() => profileImageInputRef.current?.click()} className="absolute -bottom-1 -right-1 bg-primary text-primary-foreground p-2 rounded-full border-2 border-background shadow-md">
+                  <div
+                    className="w-24 h-24 rounded-2xl overflow-hidden border-4 border-white shadow-xl cursor-pointer bg-[#0C6B38] flex items-center justify-center"
+                    onClick={() => profileImageInputRef.current?.click()}
+                  >
+                    {avatarSrc ? (
+                      <img src={avatarSrc} alt={displayName} className="w-full h-full object-cover" />
+                    ) : (
+                      <span className="text-white text-2xl font-bold">{initials}</span>
+                    )}
+                  </div>
+                  <button
+                    onClick={() => profileImageInputRef.current?.click()}
+                    className="absolute -bottom-1 -right-1 w-7 h-7 rounded-xl flex items-center justify-center text-white shadow-md border-2 border-white"
+                    style={{ background: "#0C6B38" }}
+                  >
                     <Camera className="w-3.5 h-3.5" />
                   </button>
                   <input ref={profileImageInputRef} type="file" accept="image/*" onChange={handleProfileImageUpload} className="hidden" />
                 </div>
 
-                <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-1">
-                    <h1 className="text-2xl font-bold text-foreground">{displayName}</h1>
-                    {(profile?.verificationTier || 0) >= 2 && <ShieldCheck className="w-5 h-5 text-primary" />}
-                  </div>
-                  <p className="text-muted-foreground text-sm mb-2">{user?.email}</p>
-                  {profile?.location && (
-                    <div className="flex items-center gap-1 text-sm text-muted-foreground mb-2">
-                      <MapPin className="w-4 h-4" /> {profile.location}
-                    </div>
-                  )}
-                  <div className="flex items-center gap-4">
-                    <div className="flex items-center gap-1">
-                      <Star className="w-4 h-4 fill-chart-4 text-chart-4" />
-                      <span className="text-sm font-semibold">{profile?.rating?.toFixed(1) || "0.0"}</span>
-                      <span className="text-xs text-muted-foreground">({profile?.ratingCount || 0} reviews)</span>
-                    </div>
-                    <Badge variant="secondary" className="text-xs">
-                      <Award className="w-3 h-3 mr-1" />
-                      Tier {profile?.verificationTier || 1}
-                    </Badge>
-                    <span className="text-xs text-muted-foreground">
-                      <Calendar className="w-3 h-3 inline mr-1" />
-                      Joined {profile?.joinedAt || "recently"}
-                    </span>
-                  </div>
-                </div>
+                <button
+                  onClick={() => setEditOpen(true)}
+                  className="flex items-center gap-2 text-sm font-semibold px-4 py-2 rounded-xl border border-gray-200 text-[#0D0D0D] hover:bg-gray-50 transition-colors"
+                >
+                  <Edit2 className="w-3.5 h-3.5" /> Edit Profile
+                </button>
+              </div>
 
-                <Button variant="outline" onClick={() => setEditOpen(true)} className="gap-2 rounded-xl">
-                  <Edit2 size={14} /> Edit Profile
-                </Button>
+              {/* Name + badges */}
+              <div className="flex flex-wrap items-center gap-2 mb-1">
+                <h1 className="text-2xl font-bold text-[#0D0D0D]">{displayName}</h1>
+                {tier >= 2 && <ShieldCheck className="w-5 h-5" style={{ color: "#0C6B38" }} />}
+              </div>
+              <p className="text-sm text-gray-400 mb-3">{user?.email}</p>
+
+              <div className="flex flex-wrap items-center gap-3 text-xs text-gray-500 mb-4">
+                {profile?.location && (
+                  <span className="flex items-center gap-1"><MapPin className="w-3.5 h-3.5" />{profile.location}</span>
+                )}
+                <span className="flex items-center gap-1"><Calendar className="w-3.5 h-3.5" />Joined {profile?.joinedAt || "recently"}</span>
+                <span className="flex items-center gap-1.5">
+                  <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
+                  <span className="font-semibold text-[#0D0D0D]">{profile?.rating?.toFixed(1) || "0.0"}</span>
+                  <span>({profile?.ratingCount || 0} reviews)</span>
+                </span>
+                <span
+                  className="flex items-center gap-1 font-semibold px-2.5 py-1 rounded-full text-white text-[11px]"
+                  style={{ background: "#0C6B38" }}
+                >
+                  <Award className="w-3 h-3" /> Tier {tier}
+                </span>
               </div>
 
               {profile?.bio && (
-                <p className="mt-4 text-sm text-muted-foreground border-t border-border pt-4">{profile.bio}</p>
+                <p className="text-sm text-gray-500 leading-relaxed">{profile.bio}</p>
               )}
-            </CardContent>
-          </Card>
+            </div>
+          </div>
         </motion.div>
 
-        <div className="grid md:grid-cols-2 gap-6 mb-6">
-          {/* Stats */}
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-base">Performance</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {statsData.map((stat, i) => (
-                <div key={i} className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <stat.icon className={`h-4 w-4 ${stat.color}`} />
-                    <span className="text-sm text-muted-foreground">{stat.label}</span>
+        <div className="grid md:grid-cols-2 gap-5 mb-5">
+          {/* ── Performance stats ── */}
+          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.06 }}>
+            <div className="bg-white rounded-2xl p-5" style={{ border: "1px solid #F0F0F0" }}>
+              <h2 className="text-sm font-semibold text-[#0D0D0D] mb-4">Performance</h2>
+              <div className="space-y-4">
+                {[
+                  { label: "Tasks Completed", value: profile?.helpsGiven || 0, icon: CheckCircle, color: "#059669" },
+                  { label: "Success Rate",    value: `${profile?.successRate || 0}%`, icon: TrendingUp, color: "#0C6B38" },
+                  { label: "On-Time Rate",    value: `${profile?.onTimeRate || 0}%`,  icon: Clock,      color: "#1d4ed8" },
+                  { label: "Response Time",   value: profile?.responseTime || "N/A",  icon: Briefcase,  color: "#d97706" },
+                ].map((s) => (
+                  <div key={s.label} className="flex items-center justify-between">
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: `${s.color}15` }}>
+                        <s.icon className="w-3.5 h-3.5" style={{ color: s.color }} />
+                      </div>
+                      <span className="text-sm text-gray-500">{s.label}</span>
+                    </div>
+                    <span className="text-sm font-bold text-[#0D0D0D]">{s.value}</span>
                   </div>
-                  <span className="text-sm font-semibold text-foreground">{stat.value}</span>
-                </div>
-              ))}
-            </CardContent>
-          </Card>
+                ))}
+              </div>
+            </div>
+          </motion.div>
 
-          {/* Reputation */}
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-base">Reputation</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm text-muted-foreground">Reputation Score</span>
-                  <span className="text-sm font-bold text-primary">{profile?.reputationScore || 0}</span>
+          {/* ── Reputation ── */}
+          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.08 }}>
+            <div className="bg-white rounded-2xl p-5" style={{ border: "1px solid #F0F0F0" }}>
+              <h2 className="text-sm font-semibold text-[#0D0D0D] mb-4">Reputation</h2>
+              <div className="space-y-5">
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm text-gray-500">Reputation Score</span>
+                    <span className="text-sm font-bold" style={{ color: "#0C6B38" }}>{repScore}</span>
+                  </div>
+                  <GreenBar value={Math.min(repScore / 10, 100)} />
                 </div>
-                <Progress value={Math.min((profile?.reputationScore || 0) / 10, 100)} className="h-2" />
-              </div>
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm text-muted-foreground">Reliability</span>
-                  <span className="text-sm font-semibold">{profile?.onTimeRate || 0}%</span>
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm text-gray-500">Reliability</span>
+                    <span className="text-sm font-bold text-[#0D0D0D]">{profile?.onTimeRate || 0}%</span>
+                  </div>
+                  <GreenBar value={profile?.onTimeRate || 0} />
                 </div>
-                <Progress value={profile?.onTimeRate || 0} className="h-2" />
+
+                {/* Tier progress */}
+                <div className="rounded-xl p-4 mt-2" style={{ background: "rgba(12,107,56,0.06)", border: "1px solid rgba(12,107,56,0.12)" }}>
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-xs font-semibold" style={{ color: "#0C6B38" }}>Verification Tier {tier}</span>
+                    {tier < 3 && <span className="text-xs text-gray-400">Next: Tier {tier + 1}</span>}
+                  </div>
+                  <GreenBar value={(tier / 3) * 100} />
+                </div>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </motion.div>
         </div>
 
-        {/* Skills */}
-        <Card className="mb-6">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base">Skills</CardTitle>
-          </CardHeader>
-          <CardContent>
+        {/* ── Skills ── */}
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
+          <div className="bg-white rounded-2xl p-5 mb-5" style={{ border: "1px solid #F0F0F0" }}>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-sm font-semibold text-[#0D0D0D]">Skills</h2>
+              <button onClick={() => setEditOpen(true)} className="text-xs font-medium" style={{ color: "#0C6B38" }}>Add skills</button>
+            </div>
             {profile?.skills && profile.skills.length > 0 ? (
               <div className="flex flex-wrap gap-2">
                 {profile.skills.map((skill, i) => (
-                  <Badge key={i} variant="secondary" className="rounded-full px-3 py-1">{skill}</Badge>
+                  <span
+                    key={i}
+                    className="text-xs font-medium px-3 py-1.5 rounded-full"
+                    style={{ background: "rgba(12,107,56,0.08)", color: "#0C6B38", border: "1px solid rgba(12,107,56,0.15)" }}
+                  >
+                    {skill}
+                  </span>
                 ))}
               </div>
             ) : (
-              <p className="text-sm text-muted-foreground">No skills added yet. Edit your profile to add skills.</p>
+              <div className="text-center py-6">
+                <p className="text-sm text-gray-400">No skills yet.</p>
+                <button
+                  onClick={() => setEditOpen(true)}
+                  className="mt-2 text-xs font-semibold underline"
+                  style={{ color: "#0C6B38" }}
+                >
+                  Add your skills
+                </button>
+              </div>
             )}
-          </CardContent>
-        </Card>
+          </div>
+        </motion.div>
 
-        {/* Reviews placeholder */}
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base">Reviews</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-center py-8">
-              <Star className="h-10 w-10 mx-auto mb-3 text-muted-foreground/20" />
-              <p className="text-muted-foreground text-sm">No reviews yet</p>
-              <p className="text-xs text-muted-foreground mt-1">Complete tasks to receive your first review</p>
-            </div>
-          </CardContent>
-        </Card>
+        {/* ── Reviews ── */}
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.12 }}>
+          <div className="bg-white rounded-2xl p-5" style={{ border: "1px solid #F0F0F0" }}>
+            <h2 className="text-sm font-semibold text-[#0D0D0D] mb-4">Reviews</h2>
+            {(profile?.ratingCount || 0) === 0 ? (
+              <div className="space-y-4">
+                {SAMPLE_REVIEWS.map((r, i) => (
+                  <div key={i} className="p-4 rounded-xl bg-[#F8FAF8]">
+                    <div className="flex items-center gap-3 mb-2">
+                      <img src={r.avatar} alt={r.name} className="w-8 h-8 rounded-full object-cover" />
+                      <div className="flex-1">
+                        <p className="text-xs font-semibold text-[#0D0D0D]">{r.name}</p>
+                        <div className="flex items-center gap-1">
+                          {Array.from({ length: r.rating }).map((_, s) => (
+                            <Star key={s} className="w-3 h-3 fill-amber-400 text-amber-400" />
+                          ))}
+                          <span className="text-xs text-gray-400 ml-1">{r.ago}</span>
+                        </div>
+                      </div>
+                    </div>
+                    <p className="text-xs text-gray-500 leading-relaxed">{r.text}</p>
+                  </div>
+                ))}
+                <p className="text-xs text-gray-400 text-center pt-1">Sample reviews — complete tasks to earn real ones.</p>
+              </div>
+            ) : (
+              <div className="text-center py-10">
+                <Star className="h-10 w-10 mx-auto mb-3 text-gray-200" />
+                <p className="text-sm text-gray-400">No reviews yet</p>
+                <p className="text-xs text-gray-400 mt-1">Complete tasks to receive your first review</p>
+              </div>
+            )}
+          </div>
+        </motion.div>
       </main>
+
       <Footer />
 
-      {/* Edit Profile Dialog */}
+      {/* ── Edit Profile Dialog ── */}
       <Dialog open={editOpen} onOpenChange={setEditOpen}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-md rounded-3xl">
           <DialogHeader>
-            <DialogTitle>Edit Profile</DialogTitle>
+            <DialogTitle className="text-lg font-bold">Edit Profile</DialogTitle>
           </DialogHeader>
           <form onSubmit={handleEditProfile}>
-            <div className="space-y-4 py-4">
+            <div className="space-y-4 py-2">
               <div>
-                <Label htmlFor="fullName">Full Name</Label>
-                <Input id="fullName" name="fullName" defaultValue={profile?.fullName || user?.displayName || ""} className="mt-1.5" />
+                <Label htmlFor="fullName" className="text-sm font-semibold text-[#0D0D0D]">Full Name</Label>
+                <Input id="fullName" name="fullName" defaultValue={profile?.fullName || user?.displayName || ""} className="mt-1.5 rounded-xl border-gray-200" />
               </div>
               <div>
-                <Label htmlFor="location">Location</Label>
-                <Input id="location" name="location" placeholder="e.g., London, UK" defaultValue={profile?.location || ""} className="mt-1.5" />
+                <Label htmlFor="location" className="text-sm font-semibold text-[#0D0D0D]">Location</Label>
+                <Input id="location" name="location" placeholder="e.g., Lagos, Nigeria" defaultValue={profile?.location || ""} className="mt-1.5 rounded-xl border-gray-200" />
               </div>
               <div>
-                <Label htmlFor="bio">Bio</Label>
-                <Textarea id="bio" name="bio" placeholder="Tell us about yourself..." defaultValue={profile?.bio || ""} className="mt-1.5 min-h-[100px]" />
+                <Label htmlFor="bio" className="text-sm font-semibold text-[#0D0D0D]">Bio</Label>
+                <Textarea id="bio" name="bio" placeholder="Tell people about yourself, your experience and skills..." defaultValue={profile?.bio || ""} className="mt-1.5 min-h-[100px] rounded-xl border-gray-200" />
               </div>
               <div>
-                <Label htmlFor="skills">Skills (comma-separated)</Label>
-                <Input id="skills" name="skills" placeholder="e.g., React, Design, Writing" defaultValue={profile?.skills?.join(", ") || ""} className="mt-1.5" />
+                <Label htmlFor="skills" className="text-sm font-semibold text-[#0D0D0D]">Skills <span className="font-normal text-gray-400">(comma-separated)</span></Label>
+                <Input id="skills" name="skills" placeholder="e.g., React, Design, Writing" defaultValue={profile?.skills?.join(", ") || ""} className="mt-1.5 rounded-xl border-gray-200" />
               </div>
             </div>
-            <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => setEditOpen(false)}>Cancel</Button>
-              <Button type="submit">Save Changes</Button>
-            </DialogFooter>
+            <div className="flex gap-3 pt-3">
+              <button
+                type="button"
+                onClick={() => setEditOpen(false)}
+                className="flex-1 py-3 text-sm font-medium rounded-xl border border-gray-200 text-gray-600 hover:bg-gray-50 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                className="flex-1 py-3 text-sm font-semibold rounded-xl text-white transition-all hover:opacity-90"
+                style={{ background: "#0C6B38" }}
+              >
+                Save Changes
+              </button>
+            </div>
           </form>
         </DialogContent>
       </Dialog>

@@ -1,6 +1,6 @@
 # HelpChain
 
-A social-help coordination platform connecting individuals in need with trusted helpers.
+A task marketplace connecting people who need help with verified skilled workers, featuring escrow-protected payments.
 
 ## Stack
 
@@ -11,6 +11,26 @@ A social-help coordination platform connecting individuals in need with trusted 
 - **Backend/Auth**: Supabase + Firebase
 - **Blockchain**: Solana (spl-token)
 - **Forms**: React Hook Form + Zod
+
+## Design System
+
+- **Brand color**: `#0C6B38` (deep forest green)
+- **Font**: Figtree (Google Fonts)
+- **Background**: White `#FFFFFF` / light sections `#F8FAF8`
+- **Logo**: `/images/helpchain-logo.png` (served from `client/public/images/`)
+- **Currency**: NGN (₦) — formatLocal() from useLocalizationStore
+- **Task images**: `https://picsum.photos/seed/{category-slug}/800/400`
+- **Profile photos**: `https://i.pravatar.cc/40?img={n}`
+- **Avoid**: shadcn Card/Badge/Button in overhauled pages — use plain HTML with inline Tailwind/style
+
+## Overhauled Pages
+
+- `client/src/pages/home.tsx` — Landing page with hero, worker cards, task cards, SVG How-It-Works, 12-category grid, testimonials
+- `client/src/pages/discover.tsx` — Marketplace with cover images, color-coded category badges, grid/list toggle, 26+ categories
+- `client/src/pages/dashboard.tsx` — Green gradient balance card, stat widgets, task list, quick actions sidebar
+- `client/src/pages/request-details.tsx` — Cover image, green budget box, status timeline, offers list, hire/decline buttons
+- `client/src/pages/profile.tsx` — Cover banner, avatar with camera upload, performance stats, reputation bars, skills chips, sample reviews
+- `client/src/components/layout/navbar.tsx` — Logo + nav links, SectorToggle removed
 
 ## Project Layout
 
